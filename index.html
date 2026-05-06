@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Статистика Telegram-каналов</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0f172a;font-family:'Segoe UI',system-ui,sans-serif;color:#e2e8f0;min-height:100vh}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:#1e293b}
+    ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 20px}
+
+    /* Header */
+    .header{margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .header-left{}
+    .header-badge{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .dot{width:8px;height:8px;border-radius:50%;background:#6ee7b7;box-shadow:0 0 8px #6ee7b7}
+    .badge-text{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#94a3b8}
+    h1{font-size:24px;font-weight:800;letter-spacing:-0.5px}
+    .subtitle{color:#94a3b8;font-size:13px;margin-top:4px}
+
+    /* Upload */
+    .upload-area{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+    .upload-btn{background:#1e293b;border:1px dashed #334155;border-radius:10px;padding:10px 16px;cursor:pointer;font-size:12px;color:#94a3b8;transition:all .15s;text-align:center;min-width:180px}
+    .upload-btn:hover{border-color:#6ee7b7;color:#6ee7b7}
+    .upload-hint{font-size:11px;color:#475569;text-align:right}
+    #fileInput{display:none}
+    .update-badge{display:none;font-size:11px;color:#6ee7b7;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);border-radius:6px;padding:3px 8px}
+
+    /* Stat cards */
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+    .stat-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:14px 16px;flex:1;min-width:100px}
+    .stat-val{font-size:20px;font-weight:800;line-height:1}
+    .stat-label{font-size:11px;color:#94a3b8;margin-top:4px}
+
+    /* Tabs */
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+    .tab-btn{background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;transition:all .15s}
+    .tab-btn.active{background:#6ee7b7;color:#0f172a;border-color:#6ee7b7;font-weight:700}
+    .sort-btn{margin-left:auto;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer}
+
+    /* Chart card */
+    .chart-card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:20px 16px}
+    .chart-title{font-size:15px;font-weight:700;margin-bottom:4px}
+    .chart-note{font-size:12px;color:#94a3b8;margin-bottom:16px}
+    .legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:#94a3b8;flex-wrap:wrap}
+    .legend-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+    #loading{text-align:center;color:#94a3b8;padding:40px;font-size:14px}
+
+    /* Table */
+    .table-controls{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+    .search-input{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:13px;color:#e2e8f0;width:220px;outline:none}
+    .search-input:focus{border-color:#6ee7b7}
+    .filter-select{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none;cursor:pointer}
+    .table-count{font-size:12px;color:#94a3b8;margin-left:auto}
+
+    .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid #334155}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{background:#0f172a;padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid #334155;position:sticky;top:0;z-index:1}
+    thead th:hover{color:#e2e8f0}
+    thead th .sort-icon{margin-left:4px;opacity:0.4}
+    thead th.sorted .sort-icon{opacity:1;color:#6ee7b7}
+    tbody tr{border-bottom:1px solid #1e293b;transition:background .1s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#243044}
+    tbody td{padding:10px 14px;white-space:nowrap}
+    .td-name{white-space:normal;max-width:200px;font-weight:500}
+    .delta{font-weight:700;font-size:12px}
+    .delta.pos{color:#6ee7b7}
+    .delta.neg{color:#f87171}
+    .delta.zero{color:#94a3b8}
+    .badge-status{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;margin-left:6px;vertical-align:middle}
+    .badge-up{background:rgba(110,231,183,0.15);color:#6ee7b7}
+    .badge-down{background:rgba(248,113,113,0.15);color:#f87171}
+    .badge-same{background:rgba(148,163,184,0.15);color:#94a3b8}
+
+    .footer{text-align:center;color:#334155;font-size:11px;margin-top:20px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-badge">
+        <div class="dot"></div>
+        <span class="badge-text" id="periodLabel">Апрель → Май</span>
+      </div>
+      <h1>Статистика Telegram-каналов</h1>
+      <p class="subtitle" id="subTitle">61 запущенный канал · ER и подписчики</p>
+    </div>
+    <div class="upload-area">
+      <label class="upload-btn" for="fileInput">📂 Загрузить новый CSV</label>
+      <input type="file" id="fileInput" accept=".csv"/>
+      <div class="upload-hint">Загрузи файл _all.csv — всё обновится</div>
+      <span class="update-badge" id="updateBadge">✓ Обновлено</span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats"></div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="btn-subs" onclick="setTab('subs')">📈 Подписчики</button>
+    <button class="tab-btn" id="btn-er" onclick="setTab('er')">⚡ ER</button>
+    <button class="tab-btn" id="btn-scatter" onclick="setTab('scatter')">🔵 Карта</button>
+    <button class="tab-btn" id="btn-table" onclick="setTab('table')">📋 Таблица</button>
+    <button class="sort-btn" id="sortBtn" onclick="toggleSort()">▼ Лучшие</button>
+  </div>
+
+  <!-- Chart card -->
+  <div class="chart-card" id="chartCard">
+    <div class="chart-title" id="chartTitle"></div>
+    <div class="chart-note" id="chartNote"></div>
+    <div id="loading">Загрузка графиков…</div>
+    <canvas id="myChart" style="display:none"></canvas>
+    <div class="legend" id="legend"></div>
+
+    <!-- Table view (inside same card) -->
+    <div id="tableView" style="display:none">
+      <div class="table-controls">
+        <input class="search-input" type="text" id="searchInput" placeholder="🔍 Поиск по названию…" oninput="renderTable()"/>
+        <select class="filter-select" id="filterSelect" onchange="renderTable()">
+          <option value="all">Все каналы</option>
+          <option value="up">Растут ↑</option>
+          <option value="down">Теряют ↓</option>
+          <option value="same">Без изменений</option>
+        </select>
+        <span class="table-count" id="tableCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortTable('n')">Канал <span class="sort-icon" id="th-n">↕</span></th>
+              <th onclick="sortTable('sA')">Подп. апр <span class="sort-icon" id="th-sA">↕</span></th>
+              <th onclick="sortTable('sM')">Подп. май <span class="sort-icon" id="th-sM">↕</span></th>
+              <th onclick="sortTable('ds')">Δ подп. <span class="sort-icon" id="th-ds">↕</span></th>
+              <th onclick="sortTable('dp')">Δ подп. % <span class="sort-icon" id="th-dp">↕</span></th>
+              <th onclick="sortTable('eA')">ER апр <span class="sort-icon" id="th-eA">↕</span></th>
+              <th onclick="sortTable('eM')">ER май <span class="sort-icon" id="th-eM">↕</span></th>
+              <th onclick="sortTable('de')">Δ ER <span class="sort-icon" id="th-de">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer" id="footer">Данные: апрель–май · 61 запущенный канал</p>
+</div>
+
+<script>
+// ─── Default data ───────────────────────────────────────────────────────────
+const DEFAULT_DATA = [
+  {n:"Ищу тебя Горловка",sA:1874,sM:1839,eA:39,eM:28,ds:-35,dp:-1.9,de:-11},
+  {n:"Ищу тебя Сафоново",sA:534,sM:583,eA:62,eM:50,ds:49,dp:9.2,de:-12},
+  {n:"Ищу тебя Краснодар",sA:3657,sM:3568,eA:12,eM:13,ds:-89,dp:-2.4,de:1},
+  {n:"Ищу тебя Новокузнецк",sA:5627,sM:5939,eA:34,eM:36,ds:312,dp:5.5,de:2},
+  {n:"Ищу тебя Питер",sA:7079,sM:6900,eA:6,eM:6,ds:-179,dp:-2.5,de:0},
+  {n:"в барнауле любят",sA:3726,sM:3730,eA:16,eM:15,ds:4,dp:0.1,de:-1},
+  {n:"Ищу тебя Искитим",sA:818,sM:1040,eA:32,eM:59,ds:222,dp:27.1,de:27},
+  {n:"Ищу тебя вельск",sA:1720,sM:1647,eA:42,eM:25,ds:-73,dp:-4.2,de:-17},
+  {n:"в Подольске любят",sA:4089,sM:3994,eA:13,eM:12,ds:-95,dp:-2.3,de:-1},
+  {n:"В Марий Эл любят",sA:4063,sM:3958,eA:11,eM:9,ds:-105,dp:-2.6,de:-2},
+  {n:"в калике любят",sA:3093,sM:3019,eA:15,eM:11,ds:-74,dp:-2.4,de:-4},
+  {n:"Ищу тебя Нефтекамск",sA:1354,sM:1492,eA:49,eM:42,ds:138,dp:10.2,de:-7},
+  {n:"в жел-доре любят",sA:2051,sM:2043,eA:16,eM:15,ds:-8,dp:-0.4,de:-1},
+  {n:"Ищу тебя Киров",sA:6338,sM:6815,eA:30,eM:25,ds:477,dp:7.5,de:-5},
+  {n:"в Кузнецке любят",sA:1575,sM:1531,eA:13,eM:11,ds:-44,dp:-2.8,de:-2},
+  {n:"в Коврове любят",sA:3216,sM:3126,eA:18,eM:18,ds:-90,dp:-2.8,de:0},
+  {n:"В ГУРЬЕВСКЕ ЛЮБЯТ",sA:1595,sM:1547,eA:30,eM:26,ds:-48,dp:-3.0,de:-4},
+  {n:"в воронеже любят",sA:4366,sM:4270,eA:5,eM:3,ds:-96,dp:-2.2,de:-2},
+  {n:"В Ленинск-Кузнецком любят",sA:1215,sM:1235,eA:43,eM:34,ds:20,dp:1.6,de:-9},
+  {n:"Ищу тебя Ковров",sA:1551,sM:1569,eA:39,eM:35,ds:18,dp:1.2,de:-4},
+  {n:"В Красноярске любят",sA:2611,sM:2525,eA:11,eM:9,ds:-86,dp:-3.3,de:-2},
+  {n:"шип шип бурятии",sA:15900,sM:15985,eA:22,eM:20,ds:85,dp:0.5,de:-2},
+  {n:"в орехово любят",sA:2885,sM:2856,eA:12,eM:15,ds:-29,dp:-1.0,de:3},
+  {n:"в красноярском крае любят",sA:1098,sM:1069,eA:12,eM:8,ds:-29,dp:-2.6,de:-4},
+  {n:"в Волгодонске любят",sA:2578,sM:2501,eA:10,eM:6,ds:-77,dp:-3.0,de:-4},
+  {n:"в чувашии любят",sA:2489,sM:2421,eA:15,eM:23,ds:-68,dp:-2.7,de:8},
+  {n:"В Краснодаре любят",sA:4029,sM:3886,eA:7,eM:4,ds:-143,dp:-3.5,de:-3},
+  {n:"Ищу тебя Тюмень",sA:2835,sM:2909,eA:31,eM:31,ds:74,dp:2.6,de:0},
+  {n:"в междуреченске любят",sA:3205,sM:3144,eA:29,eM:26,ds:-61,dp:-1.9,de:-3},
+  {n:"в Искитиме любят",sA:3067,sM:2987,eA:36,eM:37,ds:-80,dp:-2.6,de:1},
+  {n:"Ищу тебя Подольск",sA:2040,sM:2043,eA:35,eM:29,ds:3,dp:0.1,de:-6},
+  {n:"Ищу тебя Сургут",sA:1206,sM:1232,eA:34,eM:43,ds:26,dp:2.2,de:9},
+  {n:"В Псковской области любят",sA:2558,sM:2508,eA:15,eM:9,ds:-50,dp:-2.0,de:-6},
+  {n:"в Бурятии любят",sA:8798,sM:8497,eA:6,eM:6,ds:-301,dp:-3.4,de:0},
+  {n:"в нв любят",sA:3557,sM:3295,eA:14,eM:13,ds:-262,dp:-7.4,de:-1},
+  {n:"Ищу тебя Улан-Удэ",sA:3555,sM:3510,eA:15,eM:13,ds:-45,dp:-1.3,de:-2},
+  {n:"Ищу тебя Псков",sA:1488,sM:1521,eA:21,eM:17,ds:33,dp:2.2,de:-4},
+  {n:"Ищу тебя Красноярск",sA:2782,sM:2747,eA:21,eM:19,ds:-35,dp:-1.3,de:-2},
+  {n:"В Кодинске любят",sA:719,sM:714,eA:47,eM:28,ds:-5,dp:-0.7,de:-19},
+  {n:"В Кирове любят",sA:5759,sM:5669,eA:9,eM:6,ds:-90,dp:-1.6,de:-3},
+  {n:"в НПР любят",sA:1124,sM:1104,eA:24,eM:23,ds:-20,dp:-1.8,de:-1},
+  {n:"Братск любит",sA:3326,sM:3263,eA:15,eM:15,ds:-63,dp:-1.9,de:0},
+  {n:"в нв не любят",sA:2743,sM:2731,eA:12,eM:14,ds:-12,dp:-0.4,de:2},
+  {n:"УЗНАЙ ЗА БРАТСК",sA:8258,sM:8685,eA:26,eM:31,ds:427,dp:5.2,de:5},
+  {n:"в подмосковье любят",sA:1837,sM:1786,eA:9,eM:7,ds:-51,dp:-2.8,de:-2},
+  {n:"Ищу тебя Нижневартовск",sA:8466,sM:8584,eA:33,eM:37,ds:118,dp:1.4,de:4},
+  {n:"в сургуте любят",sA:2306,sM:2249,eA:17,eM:15,ds:-57,dp:-2.5,de:-2},
+  {n:"Ищу тебя Братск",sA:1429,sM:1420,eA:25,eM:22,ds:-9,dp:-0.6,de:-3},
+  {n:"Ищу тебя Томск",sA:1400,sM:1404,eA:16,eM:22,ds:4,dp:0.3,de:6},
+  {n:"Ищу тебя Иркутск",sA:7077,sM:7256,eA:30,eM:31,ds:179,dp:2.5,de:1},
+  {n:"в сафоново любят",sA:1976,sM:1943,eA:28,eM:22,ds:-33,dp:-1.7,de:-6},
+  {n:"в тюмени любят",sA:3452,sM:3377,eA:8,eM:10,ds:-75,dp:-2.2,de:2},
+  {n:"Ищу тебя Салехард",sA:1311,sM:1361,eA:0,eM:51,ds:50,dp:3.8,de:51},
+  {n:"В Нефтекамске любят",sA:2127,sM:2077,eA:23,eM:20,ds:-50,dp:-2.4,de:-3},
+  {n:"В салехарде любят",sA:2620,sM:2604,eA:23,eM:24,ds:-16,dp:-0.6,de:1},
+  {n:"Ищу тебя Междуреченск",sA:2741,sM:2943,eA:47,eM:48,ds:202,dp:7.4,de:1},
+  {n:"в благовещенске любят",sA:1200,sM:1261,eA:20,eM:18,ds:61,dp:5.1,de:-2},
+  {n:"В России любят",sA:5773,sM:10805,eA:14,eM:12,ds:5032,dp:87.2,de:-2},
+  {n:"Ищу тебя Бугуруслан",sA:4529,sM:4697,eA:40,eM:34,ds:168,dp:3.7,de:-6},
+  {n:"Ищу тебя Соль-Илецк",sA:4472,sM:4272,eA:25,eM:21,ds:-200,dp:-4.5,de:-4},
+  {n:"В Нолинске любят",sA:1379,sM:1360,eA:34,eM:24,ds:-19,dp:-1.4,de:-10}
+];
+
+let DATA = DEFAULT_DATA.slice();
+let currentTab = 'subs', sortDir = 'desc', chart = null;
+let tableSortKey = 'dp', tableSortDir = 'desc';
+
+// ─── CSV Parser ──────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return null;
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+
+  // Find column indices flexibly
+  const idx = (kws) => headers.findIndex(h => kws.some(k => h.toLowerCase().includes(k.toLowerCase())));
+  const iName  = idx(['название', 'name', 'канал']);
+  const iSA    = idx(['апрель', 'april', 'апр']);
+  const iSM    = idx(['май', 'may']);
+  const iEA    = idx(['er %', 'er%', 'er апр', 'er (апр']);
+  const iEM    = idx(['er % (май', 'er май', 'er (май']);
+
+  if (iName < 0 || iSA < 0 || iSM < 0) {
+    alert('Не удалось распознать столбцы CSV.\nПроверь что в файле есть: Название, Подписчики (апрель), Подписчики (май), ER % (апрель), ER % (май)');
+    return null;
+  }
+
+  const parsed = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim().replace(/"/g,''));
+    if (!cols[iName]) continue;
+    const sA = parseFloat(cols[iSA]) || 0;
+    const sM = parseFloat(cols[iSM]) || 0;
+    const eA = parseFloat(cols[iEA >= 0 ? iEA : -1]) || 0;
+    const eM = parseFloat(cols[iEM >= 0 ? iEM : -1]) || 0;
+    const ds = sM - sA;
+    const dp = sA > 0 ? parseFloat(((ds / sA) * 100).toFixed(1)) : 0;
+    const de = parseFloat((eM - eA).toFixed(1));
+    parsed.push({ n: cols[iName], sA, sM, eA, eM, ds, dp, de });
+  }
+  return parsed.length > 0 ? parsed : null;
+}
+
+// ─── File upload ─────────────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const parsed = parseCSV(ev.target.result);
+    if (!parsed) return;
+    DATA = parsed;
+    const badge = document.getElementById('updateBadge');
+    badge.style.display = 'inline';
+    badge.textContent = `✓ Обновлено: ${file.name}`;
+    setTimeout(() => badge.style.display = 'none', 4000);
+    initAll();
+  };
+  reader.readAsText(file, 'UTF-8');
+  this.value = '';
+});
+
+// ─── Stats ───────────────────────────────────────────────────────────────────
+function initStats() {
+  const growing  = DATA.filter(d => d.ds > 0).length;
+  const shrinking= DATA.filter(d => d.ds < 0).length;
+  const avgER    = (DATA.reduce((s,d) => s+d.eM, 0)/DATA.length).toFixed(1);
+  const totalSubs= Math.round(DATA.reduce((s,d) => s+d.sM, 0)/1000);
+  document.getElementById('subTitle').textContent = `${DATA.length} каналов · ER и подписчики`;
+  document.getElementById('stats').innerHTML = [
+    {label:'Каналов',      val:DATA.length,    color:'#6ee7b7'},
+    {label:'Растут',       val:growing,         color:'#6ee7b7'},
+    {label:'Теряют',       val:shrinking,       color:'#f87171'},
+    {label:'Ср. ER (май)', val:avgER+'%',       color:'#fbbf24'},
+    {label:'Всего подп.',  val:totalSubs+'K',   color:'#a78bfa'},
+  ].map(s=>`<div class="stat-card"><div class="stat-val" style="color:${s.color}">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+  document.getElementById('footer').textContent = `Данные: ${DATA.length} каналов · обновлено ${new Date().toLocaleDateString('ru')}`;
+}
+
+// ─── Table ───────────────────────────────────────────────────────────────────
+function sortTable(key) {
+  if (tableSortKey === key) tableSortDir = tableSortDir === 'desc' ? 'asc' : 'desc';
+  else { tableSortKey = key; tableSortDir = 'desc'; }
+  renderTable();
+}
+
+function deltaClass(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero'; }
+function deltaSign(v)  { return v > 0 ? '+' : ''; }
+
+function renderTable() {
+  const q      = (document.getElementById('searchInput').value || '').toLowerCase();
+  const filter = document.getElementById('filterSelect').value;
+
+  let rows = DATA.filter(d => {
+    const matchQ = !q || d.n.toLowerCase().includes(q);
+    const matchF = filter === 'all' || (filter === 'up' && d.ds > 0) || (filter === 'down' && d.ds < 0) || (filter === 'same' && d.ds === 0);
+    return matchQ && matchF;
+  });
+
+  rows.sort((a,b) => {
+    const av = tableSortKey === 'n' ? a.n : a[tableSortKey];
+    const bv = tableSortKey === 'n' ? b.n : b[tableSortKey];
+    if (tableSortKey === 'n') return tableSortDir === 'desc' ? bv.localeCompare(av) : av.localeCompare(bv);
+    return tableSortDir === 'desc' ? bv - av : av - bv;
+  });
+
+  // Update sort icons
+  ['n','sA','sM','ds','dp','eA','eM','de'].forEach(k => {
+    const el = document.getElementById('th-'+k);
+    if (el) {
+      el.textContent = tableSortKey === k ? (tableSortDir === 'desc' ? '↓' : '↑') : '↕';
+      el.parentElement.classList.toggle('sorted', tableSortKey === k);
+    }
+  });
+
+  document.getElementById('tableCount').textContent = `Показано: ${rows.length} из ${DATA.length}`;
+
+  document.getElementById('tableBody').innerHTML = rows.map(d => {
+    const subBadge = d.ds > 0 ? '<span class="badge-status badge-up">▲ растёт</span>' : d.ds < 0 ? '<span class="badge-status badge-down">▼ падает</span>' : '<span class="badge-status badge-same">— стабильно</span>';
+    return `<tr>
+      <td class="td-name">${d.n}${subBadge}</td>
+      <td>${d.sA.toLocaleString()}</td>
+      <td><strong>${d.sM.toLocaleString()}</strong></td>
+      <td><span class="delta ${deltaClass(d.ds)}">${deltaSign(d.ds)}${d.ds.toLocaleString()}</span></td>
+      <td><span class="delta ${deltaClass(d.dp)}">${deltaSign(d.dp)}${d.dp}%</span></td>
+      <td>${d.eA}%</td>
+      <td><strong>${d.eM}%</strong></td>
+      <td><span class="delta ${deltaClass(d.de)}">${deltaSign(d.de)}${d.de}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Tabs ────────────────────────────────────────────────────────────────────
+function setTab(tab) {
+  currentTab = tab;
+  ['subs','er','scatter','table'].forEach(t => {
+    document.getElementById('btn-'+t).classList.toggle('active', t === tab);
+  });
+  document.getElementById('sortBtn').style.display = (tab === 'scatter' || tab === 'table') ? 'none' : '';
+  document.getElementById('tableView').style.display = tab === 'table' ? 'block' : 'none';
+  document.getElementById('myChart').style.display  = tab !== 'table' ? 'block' : 'none';
+  document.getElementById('chartTitle').style.display = tab !== 'table' ? 'block' : 'none';
+  document.getElementById('chartNote').style.display  = tab !== 'table' ? 'block' : 'none';
+  document.getElementById('legend').style.display     = tab !== 'table' ? 'flex' : 'none';
+  if (tab === 'table') { renderTable(); }
+  else { renderChart(); }
+}
+
+function toggleSort() {
+  sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+  document.getElementById('sortBtn').textContent = sortDir === 'desc' ? '▼ Лучшие' : '▲ Худшие';
+  renderChart();
+}
+
+// ─── Charts ──────────────────────────────────────────────────────────────────
+const TIP = {backgroundColor:'#1e293b',titleColor:'#6ee7b7',bodyColor:'#e2e8f0',borderColor:'#334155',borderWidth:1,padding:10};
+const short = n => n.length > 22 ? n.slice(0,20)+'…' : n;
+
+function renderChart() {
+  if (chart) { chart.destroy(); chart = null; }
+  const canvas = document.getElementById('myChart');
+  canvas.style.display = 'block';
+  document.getElementById('loading').style.display = 'none';
+
+  if (currentTab === 'subs') {
+    document.getElementById('chartTitle').textContent = 'Рост подписчиков, % (топ-15)';
+    document.getElementById('chartNote').textContent  = '«В России любят» исключён для масштаба если рост > 50%';
+    document.getElementById('legend').innerHTML = '';
+    canvas.height = 420;
+
+    const rows = [...DATA]
+      .filter(d => d.dp < 50)
+      .sort((a,b) => sortDir==='desc' ? b.dp-a.dp : a.dp-b.dp)
+      .slice(0,15);
+
+    chart = new Chart(canvas, {
+      type:'bar',
+      data:{ labels:rows.map(d=>short(d.n)), datasets:[{ data:rows.map(d=>d.dp), backgroundColor:rows.map(d=>d.dp>=0?'#6ee7b7':'#f87171'), borderRadius:4, barPercentage:0.7 }] },
+      options:{ indexAxis:'y', responsive:true,
+        plugins:{ legend:{display:false}, tooltip:{...TIP, callbacks:{
+          title: i=>rows[i[0].dataIndex].n,
+          label: i=>{ const d=rows[i.dataIndex]; return [`Изменение: ${d.dp>=0?'+':''}${d.dp}%`,`Абсолютно: ${d.ds>=0?'+':''}${d.ds}`]; }
+        }}},
+        scales:{ x:{ticks:{color:'#94a3b8',font:{size:11},callback:v=>v+'%'},grid:{color:'#334155'}}, y:{ticks:{color:'#e2e8f0',font:{size:11},crossAlign:'far'},grid:{display:false}} }
+      }
+    });
+
+  } else if (currentTab === 'er') {
+    document.getElementById('chartTitle').textContent = 'ER апрель vs май (топ-15)';
+    document.getElementById('chartNote').textContent  = 'Аномальные каналы (Δ > 40%) исключены для масштаба';
+    document.getElementById('legend').innerHTML = `
+      <span><span class="legend-dot" style="background:#64748b"></span>ER апрель</span>
+      <span><span class="legend-dot" style="background:#6ee7b7"></span>ER май (рост)</span>
+      <span><span class="legend-dot" style="background:#f87171"></span>ER май (падение)</span>`;
+    canvas.height = 420;
+
+    const rows = [...DATA]
+      .filter(d => Math.abs(d.de) < 40)
+      .sort((a,b) => sortDir==='desc' ? b.de-a.de : a.de-b.de)
+      .slice(0,15);
+
+    chart = new Chart(canvas, {
+      type:'bar',
+      data:{ labels:rows.map(d=>short(d.n)), datasets:[
+        { label:'ER апрель', data:rows.map(d=>d.eA), backgroundColor:'#64748b', borderRadius:2, barPercentage:0.7 },
+        { label:'ER май',    data:rows.map(d=>d.eM), backgroundColor:rows.map(d=>d.de>=0?'#6ee7b7':'#f87171'), borderRadius:4, barPercentage:0.7 }
+      ]},
+      options:{ indexAxis:'y', responsive:true,
+        plugins:{ legend:{display:false}, tooltip:{...TIP, callbacks:{
+          title: i=>rows[i[0].dataIndex].n,
+          label: i=>{ const d=rows[i.dataIndex]; return i.datasetIndex===0?`ER апрель: ${d.eA}%`:[`ER май: ${d.eM}%`,`Δ: ${d.de>=0?'+':''}${d.de}%`]; }
+        }}},
+        scales:{ x:{ticks:{color:'#94a3b8',font:{size:11},callback:v=>v+'%'},grid:{color:'#334155'}}, y:{ticks:{color:'#e2e8f0',font:{size:11},crossAlign:'far'},grid:{display:false}} }
+      }
+    });
+
+  } else if (currentTab === 'scatter') {
+    document.getElementById('chartTitle').textContent = 'Подписчики vs ER (май)';
+    document.getElementById('chartNote').textContent  = 'Размер точки = масштаб изменения подписчиков. 🟢 растёт · 🔴 падает';
+    document.getElementById('legend').innerHTML = '';
+    canvas.height = 400;
+
+    const pts = DATA.map(d=>({x:d.sM,y:d.eM,r:Math.max(5,Math.min(20,Math.abs(d.ds)/40)),n:d.n,ds:d.ds}));
+
+    chart = new Chart(canvas, {
+      type:'bubble',
+      data:{ datasets:[{ data:pts, backgroundColor:pts.map(p=>p.ds>=0?'rgba(110,231,183,0.65)':'rgba(248,113,113,0.65)'), borderColor:pts.map(p=>p.ds>=0?'#6ee7b7':'#f87171'), borderWidth:1 }] },
+      options:{ responsive:true,
+        plugins:{ legend:{display:false}, tooltip:{...TIP, callbacks:{
+          label: i=>{ const d=i.raw; return [`${d.n}`,`Подп.: ${d.x.toLocaleString()}`,`ER: ${d.y}%`,`Рост: ${d.ds>=0?'+':''}${d.ds}`]; }
+        }}},
+        scales:{
+          x:{title:{display:true,text:'Подписчики',color:'#94a3b8',font:{size:11}},ticks:{color:'#94a3b8',font:{size:11},callback:v=>(v/1000).toFixed(0)+'K'},grid:{color:'#334155'}},
+          y:{title:{display:true,text:'ER %',color:'#94a3b8',font:{size:11}},ticks:{color:'#94a3b8',font:{size:11},callback:v=>v+'%'},grid:{color:'#334155'}}
+        }
+      }
+    });
+  }
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+function initAll() {
+  initStats();
+  if (currentTab === 'table') renderTable();
+  else renderChart();
+}
+
+function loadScript(src, cb) {
+  const s = document.createElement('script');
+  s.src = src;
+  s.onload = cb;
+  s.onerror = () => loadScript('https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js', cb);
+  document.head.appendChild(s);
+}
+
+loadScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js', () => {
+  initAll();
+});
+</script>
+</body>
+</html>
