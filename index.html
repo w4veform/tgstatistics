@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Сеть каналов · Аналитика</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080f1e;--bg2:#0d1628;--card:#111d33;--card2:#162040;
+  --border:#1e2d4a;--border2:#253554;
+  --text:#e8eef8;--muted:#5a7399;--muted2:#3d5278;
+  --green:#34d399;--green2:rgba(52,211,153,.12);
+  --red:#f87171;--red2:rgba(248,113,113,.12);
+  --blue:#60a5fa;--blue2:rgba(96,165,250,.1);
+  --yellow:#fbbf24;--purple:#a78bfa;
+  --accent:#34d399;
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+body{background:var(--bg);font-family:'Segoe UI',system-ui,sans-serif;color:var(--text);min-height:100vh;font-size:14px}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{padding:28px 28px 40px;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.logo{display:flex;align-items:center;gap:10px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#34d399,#059669);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo-text{font-size:15px;font-weight:800;letter-spacing:-0.3px}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:1px}
+
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:6px}
+
+.snap-list{display:flex;flex-direction:column;gap:4px;flex:1;min-height:0;overflow-y:auto}
+.snap-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .15s;position:relative}
+.snap-item:hover{border-color:var(--border2);background:var(--card2)}
+.snap-item.active{border-color:var(--accent);background:rgba(52,211,153,.07)}
+.snap-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--accent);border-radius:0 2px 2px 0}
+.snap-date{font-size:12px;font-weight:600;color:var(--text)}
+.snap-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.snap-del{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;opacity:0;transition:opacity .15s}
+.snap-item:hover .snap-del{opacity:1}
+.snap-del:hover{color:var(--red);background:var(--red2)}
+
+.no-snaps{color:var(--muted);font-size:12px;text-align:center;padding:20px 0;line-height:1.6}
+
+/* ── PASTE MODAL ── */
+.paste-btn{background:var(--accent);color:#041a0e;border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;width:100%;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.paste-btn:hover{background:#2fca90;transform:translateY(-1px)}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:24px;width:560px;max-width:95vw;display:flex;flex-direction:column;gap:16px}
+.modal-title{font-size:17px;font-weight:800}
+.modal-sub{font-size:12px;color:var(--muted);line-height:1.5}
+textarea{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:12px;color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none;width:100%;min-height:180px;transition:border .15s}
+textarea:focus{border-color:var(--accent)}
+.modal-row{display:flex;gap:10px}
+.btn-cancel{background:var(--card2);border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:9px 18px;font-size:13px;cursor:pointer;flex:1}
+.btn-save{background:var(--accent);color:#041a0e;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;flex:2;transition:background .15s}
+.btn-save:hover{background:#2fca90}
+.parse-error{color:var(--red);font-size:12px;display:none}
+
+/* ── HEADER ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.page-title{font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.compare-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 12px}
+.compare-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+/* ── STAT CARDS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--stat-color,var(--accent));opacity:.6}
+.stat-val{font-size:24px;font-weight:900;letter-spacing:-1px;line-height:1;color:var(--stat-color,var(--text))}
+.stat-label{font-size:11px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.5px}
+.stat-delta{font-size:12px;font-weight:600;margin-top:6px}
+.stat-delta.pos{color:var(--green)}
+.stat-delta.neg{color:var(--red)}
+.stat-delta.neu{color:var(--muted)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:500;padding:8px 16px;cursor:pointer;transition:all .15s;margin-bottom:-1px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+
+/* ── TABLE ── */
+.table-controls{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.search{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;width:230px;transition:border .15s}
+.search:focus{border-color:var(--accent)}
+.fselect{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;cursor:pointer}
+.tcount{font-size:12px;color:var(--muted);margin-left:auto}
+
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg2);padding:10px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+thead th:hover{color:var(--text)}
+.th-icon{margin-left:3px;opacity:.3;font-size:10px}
+th.sorted .th-icon{opacity:1;color:var(--accent)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--card2)}
+td{padding:10px 14px;white-space:nowrap}
+.td-name{white-space:normal;max-width:220px}
+.chan-name{font-weight:600;font-size:13px}
+.chan-link{font-size:10px;color:var(--muted);margin-top:1px}
+.chan-link a{color:var(--muted);text-decoration:none}
+.chan-link a:hover{color:var(--blue)}
+
+.d{font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:2px}
+.d.pos{color:var(--green)}
+.d.neg{color:var(--red)}
+.d.neu{color:var(--muted)}
+.er-bar{display:flex;align-items:center;gap:8px}
+.er-fill{height:4px;border-radius:2px;background:var(--accent);min-width:2px;max-width:60px;transition:width .3s}
+.er-val{font-weight:700}
+
+/* ── CHARTS ── */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.chart-note{font-size:11px;color:var(--muted);margin-bottom:14px}
+
+/* ── EMPTY STATE ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;text-align:center}
+.empty-icon{font-size:48px;opacity:.4}
+.empty-title{font-size:18px;font-weight:700;color:var(--muted)}
+.empty-sub{font-size:13px;color:var(--muted2);max-width:300px;line-height:1.6}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}
+  .main{padding:20px 16px}
+  .charts-grid{grid-template-columns:1fr}
+  .chart-card.full{grid-column:1}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">📡</div>
+      <div>
+        <div class="logo-text">Сеть каналов</div>
+        <div class="logo-sub">Аналитика TrustStat</div>
+      </div>
+    </div>
+
+    <div>
+      <button class="paste-btn" onclick="openModal()">
+        ＋ Добавить снапшот
+      </button>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+      <div class="section-label">История снапшотов</div>
+      <div class="snap-list" id="snapList">
+        <div class="no-snaps">Снапшотов пока нет.<br/>Вставь данные из TrustStat.</div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--muted2);line-height:1.5;border-top:1px solid var(--border);padding-top:14px">
+      Данные хранятся в браузере.<br/>Сравнение с предыдущим снапшотом.
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main" id="mainArea">
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">Нет данных</div>
+      <div class="empty-sub">Нажми «Добавить снапшот» и вставь текст из TrustStat — всё появится автоматически.</div>
+    </div>
+
+    <div id="dashboard" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title" id="dashTitle">Снапшот</div>
+          <div class="page-sub" id="dashSub"></div>
+        </div>
+        <div class="compare-badge" id="compareBadge" style="display:none">
+          <div class="compare-dot"></div>
+          <span id="compareText"></span>
+        </div>
+      </div>
+
+      <div class="stats" id="statsRow"></div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="setTab('table',this)">📋 Таблица</button>
+        <button class="tab" onclick="setTab('charts',this)">📈 Графики</button>
+      </div>
+
+      <!-- TABLE TAB -->
+      <div id="tabTable">
+        <div class="table-controls">
+          <input class="search" type="text" id="searchQ" placeholder="🔍 Поиск канала…" oninput="renderTable()"/>
+          <select class="fselect" id="filterSel" onchange="renderTable()">
+            <option value="all">Все каналы</option>
+            <option value="up">Растут ▲</option>
+            <option value="down">Теряют ▼</option>
+            <option value="er30">ER24 ≥ 30%</option>
+            <option value="er50">ER24 ≥ 50%</option>
+          </select>
+          <span class="tcount" id="tcount"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortBy('name')">Канал <span class="th-icon" id="th-name">↕</span></th>
+                <th onclick="sortBy('subs')">Подписчики <span class="th-icon" id="th-subs">↕</span></th>
+                <th onclick="sortBy('v24')">Просм. 24ч <span class="th-icon" id="th-v24">↕</span></th>
+                <th onclick="sortBy('v48')">48ч <span class="th-icon" id="th-v48">↕</span></th>
+                <th onclick="sortBy('v72')">72ч <span class="th-icon" id="th-v72">↕</span></th>
+                <th onclick="sortBy('er24')">ER24 <span class="th-icon" id="th-er24">↕</span></th>
+                <th onclick="sortBy('dSubs')">Δ подп. <span class="th-icon" id="th-dSubs">↕</span></th>
+                <th onclick="sortBy('dEr')">Δ ER24 <span class="th-icon" id="th-dEr">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CHARTS TAB -->
+      <div id="tabCharts" style="display:none">
+        <div class="charts-grid">
+          <div class="chart-card full">
+            <div class="chart-title">ER24 по каналам (топ-20)</div>
+            <div class="chart-note">Уровень вовлечённости за последние 24 часа</div>
+            <canvas id="chartER" height="320"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Топ по подписчикам</div>
+            <div class="chart-note">Крупнейшие каналы сети</div>
+            <canvas id="chartSubs" height="280"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Топ по просмотрам 24ч</div>
+            <div class="chart-note">Активность за сутки</div>
+            <canvas id="chartViews" height="280"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">📥 Новый снапшот</div>
+    <div class="modal-sub">Скопируй весь текст из TrustStat (включая итоговую строку с «Всего подписчиков») и вставь сюда.</div>
+    <textarea id="pasteArea" placeholder="🎭 В Нолинске любят (http://t.me/...) 👤 1 357&#10;👁️ 24ч: 552 | 48ч: 631 | 72ч: 638&#10;📈 ER24: 40,68%&#10;&#10;🎭 ..."></textarea>
+    <div class="parse-error" id="parseError">⚠️ Не удалось распознать данные. Убедись что вставил текст из TrustStat.</div>
+    <div class="modal-row">
+      <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+      <button class="btn-save" onclick="saveSnapshot()">💾 Сохранить снапшот</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Storage ─────────────────────────────────────────────────────────────────
+const STORE_KEY = 'tg_snapshots_v2';
+function loadSnaps()  { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch(e){ return []; } }
+function saveSnaps(s) { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+
+let snapshots = loadSnaps();
+let activeIdx = snapshots.length - 1;
+let tSortKey = 'er24', tSortDir = 'desc';
+let activeChart1 = null, activeChart2 = null, activeChart3 = null;
+
+// ─── Parser ───────────────────────────────────────────────────────────────────
+function parseTrustat(text) {
+  const num = s => parseInt(s.replace(/[\s\u00a0\u202f]/g,'').replace(',','.')) || 0;
+  const flt = s => parseFloat(s.replace(/[\s\u00a0]/g,'').replace(',','.')) || 0;
+
+  const blocks = text.split(/🎭/).slice(1);
+  const channels = [];
+
+  for (const block of blocks) {
+    const nameM = block.match(/^([^(]+)\(/);
+    if (!nameM) continue;
+    const name = nameM[1].trim().replace(/…$/, '').replace(/[🫸🫷❤️❄️💘💞]+/g,'').trim();
+
+    const urlM = block.match(/\((https?:\/\/t\.me\/[^)]+)\)/);
+    const url = urlM ? urlM[1] : '';
+
+    const subM = block.match(/👤\s*([\d\s\u00a0\u202f]+)/);
+    const subs = subM ? num(subM[1]) : 0;
+    if (subs === 0) continue;
+
+    const v24M = block.match(/24[чh]:\s*([\d\s\u00a0\u202f]+)/i);
+    const v48M = block.match(/48[чh]:\s*([\d\s\u00a0\u202f]+)/i);
+    const v72M = block.match(/72[чh]:\s*([\d\s\u00a0\u202f]+)/i);
+    const erM  = block.match(/ER24:\s*([\d,\.]+)%/);
+
+    channels.push({
+      name, url,
+      subs:  subs,
+      v24:   v24M ? num(v24M[1]) : 0,
+      v48:   v48M ? num(v48M[1]) : 0,
+      v72:   v72M ? num(v72M[1]) : 0,
+      er24:  erM  ? flt(erM[1])  : 0,
+    });
+  }
+  return channels;
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+function openModal()  { document.getElementById('modal').classList.add('open'); document.getElementById('pasteArea').value=''; document.getElementById('parseError').style.display='none'; }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function saveSnapshot() {
+  const text = document.getElementById('pasteArea').value.trim();
+  const channels = parseTrustat(text);
+  if (channels.length < 3) { document.getElementById('parseError').style.display='block'; return; }
+
+  const snap = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('ru',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    time: new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}),
+    channels
+  };
+  snapshots.push(snap);
+  saveSnaps(snapshots);
+  activeIdx = snapshots.length - 1;
+  closeModal();
+  renderSidebar();
+  renderDashboard();
+}
+
+function deleteSnap(idx, e) {
+  e.stopPropagation();
+  if (!confirm('Удалить снапшот?')) return;
+  snapshots.splice(idx,1);
+  saveSnaps(snapshots);
+  if (activeIdx >= snapshots.length) activeIdx = snapshots.length - 1;
+  renderSidebar();
+  renderDashboard();
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const el = document.getElementById('snapList');
+  if (snapshots.length === 0) {
+    el.innerHTML = '<div class="no-snaps">Снапшотов пока нет.<br/>Вставь данные из TrustStat.</div>';
+    return;
+  }
+  el.innerHTML = [...snapshots].reverse().map((s, ri) => {
+    const i = snapshots.length - 1 - ri;
+    return `<div class="snap-item${i===activeIdx?' active':''}" onclick="selectSnap(${i})">
+      <div class="snap-date">${s.date} · ${s.time}</div>
+      <div class="snap-meta">${s.channels.length} каналов</div>
+      <button class="snap-del" onclick="deleteSnap(${i},event)">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function selectSnap(i) { activeIdx = i; renderSidebar(); renderDashboard(); }
+
+// ─── Delta helpers ────────────────────────────────────────────────────────────
+function getDelta(cur, prev, key) {
+  if (!prev) return null;
+  const pc = prev.channels.find(c => c.name === cur.name);
+  if (!pc) return null;
+  return cur[key] - pc[key];
+}
+
+function fmtD(v, suffix='', decimals=0) {
+  if (v === null) return '<span class="d neu">—</span>';
+  const cls = v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu';
+  const sign = v > 0 ? '+' : '';
+  const val = decimals ? v.toFixed(decimals) : Math.round(v);
+  return `<span class="d ${cls}">${sign}${val}${suffix}</span>`;
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const empty = document.getElementById('emptyState');
+  const dash  = document.getElementById('dashboard');
+
+  if (snapshots.length === 0 || activeIdx < 0) {
+    empty.style.display = 'flex'; dash.style.display = 'none'; return;
+  }
+  empty.style.display = 'none'; dash.style.display = 'block';
+
+  const snap = snapshots[activeIdx];
+  const prev = activeIdx > 0 ? snapshots[activeIdx-1] : null;
+  const ch = snap.channels;
+
+  // Header
+  document.getElementById('dashTitle').textContent = `Снапшот · ${snap.date}`;
+  document.getElementById('dashSub').textContent = `${ch.length} каналов · данные за ${snap.time}`;
+  const cb = document.getElementById('compareBadge');
+  if (prev) {
+    cb.style.display = 'flex';
+    document.getElementById('compareText').textContent = `vs ${prev.date} · ${prev.time}`;
+  } else { cb.style.display = 'none'; }
+
+  // Stats
+  const totalSubs = ch.reduce((s,c)=>s+c.subs,0);
+  const totalV24  = ch.reduce((s,c)=>s+c.v24,0);
+  const avgER     = (ch.reduce((s,c)=>s+c.er24,0)/ch.length).toFixed(1);
+  const growing   = prev ? ch.filter(c => { const d=getDelta(c,prev,'subs'); return d!==null&&d>0; }).length : '—';
+  const falling   = prev ? ch.filter(c => { const d=getDelta(c,prev,'subs'); return d!==null&&d<0; }).length : '—';
+
+  let dTotalSubs=null, dV24=null, dER=null;
+  if (prev) {
+    const ps=prev.channels; const pTotal=ps.reduce((s,c)=>s+c.subs,0);
+    dTotalSubs = totalSubs - pTotal;
+    const pV24=ps.reduce((s,c)=>s+c.v24,0); dV24=totalV24-pV24;
+    const pER=(ps.reduce((s,c)=>s+c.er24,0)/ps.length); dER=parseFloat((parseFloat(avgER)-pER).toFixed(1));
+  }
+
+  const fmtNum = n => n>=1000 ? (n/1000).toFixed(1)+'K' : n;
+  const fmtDelta = (v,suf='') => v===null?'' : `<div class="stat-delta ${v>0?'pos':v<0?'neg':'neu'}">${v>0?'+':''}${fmtNum(v)}${suf}</div>`;
+
+  document.getElementById('statsRow').innerHTML = [
+    {label:'Каналов',       val:ch.length,       delta:'',                              color:'var(--blue)',   suf:''},
+    {label:'Подписчики',    val:fmtNum(totalSubs),delta:fmtDelta(dTotalSubs),           color:'var(--green)',  suf:''},
+    {label:'Просм. 24ч',    val:fmtNum(totalV24), delta:fmtDelta(dV24),                 color:'var(--purple)', suf:''},
+    {label:'Ср. ER24',      val:avgER+'%',         delta:fmtDelta(dER,'%'),              color:'var(--yellow)', suf:''},
+    {label:'Растут',        val:growing,           delta:'',                              color:'var(--green)',  suf:''},
+    {label:'Теряют',        val:falling,           delta:'',                              color:'var(--red)',    suf:''},
+  ].map(s=>`<div class="stat" style="--stat-color:${s.color}"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div>${s.delta}</div>`).join('');
+
+  renderTable();
+  if (document.getElementById('tabCharts').style.display !== 'none') renderCharts();
+}
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+function sortBy(k) {
+  if (tSortKey===k) tSortDir = tSortDir==='desc'?'asc':'desc';
+  else { tSortKey=k; tSortDir='desc'; }
+  renderTable();
+}
+
+function renderTable() {
+  if (activeIdx < 0 || activeIdx >= snapshots.length) return;
+  const snap = snapshots[activeIdx];
+  const prev = activeIdx > 0 ? snapshots[activeIdx-1] : null;
+  const q = (document.getElementById('searchQ').value||'').toLowerCase();
+  const f = document.getElementById('filterSel').value;
+
+  let rows = snap.channels.map(c => {
+    const dSubs = getDelta(c, prev, 'subs');
+    const dEr   = getDelta(c, prev, 'er24');
+    return {...c, dSubs, dEr};
+  });
+
+  rows = rows.filter(c => {
+    if (q && !c.name.toLowerCase().includes(q)) return false;
+    if (f==='up'   && !(c.dSubs!==null && c.dSubs>0)) return false;
+    if (f==='down' && !(c.dSubs!==null && c.dSubs<0)) return false;
+    if (f==='er30' && c.er24 < 30) return false;
+    if (f==='er50' && c.er24 < 50) return false;
+    return true;
+  });
+
+  rows.sort((a,b) => {
+    const av = tSortKey==='name' ? a.name : (a[tSortKey]??-Infinity);
+    const bv = tSortKey==='name' ? b.name : (b[tSortKey]??-Infinity);
+    if (tSortKey==='name') return tSortDir==='desc' ? bv.localeCompare(av,'ru') : av.localeCompare(bv,'ru');
+    return tSortDir==='desc' ? bv-av : av-bv;
+  });
+
+  ['name','subs','v24','v48','v72','er24','dSubs','dEr'].forEach(k => {
+    const el = document.getElementById('th-'+k);
+    if (!el) return;
+    el.textContent = tSortKey===k ? (tSortDir==='desc'?'↓':'↑') : '↕';
+    el.parentElement.classList.toggle('sorted', tSortKey===k);
+  });
+
+  document.getElementById('tcount').textContent = `${rows.length} из ${snap.channels.length}`;
+
+  const maxER = Math.max(...snap.channels.map(c=>c.er24));
+  document.getElementById('tbody').innerHTML = rows.map(c => {
+    const erW = Math.round((c.er24/Math.max(maxER,1))*60);
+    const erCls = c.er24>=50?'var(--yellow)':c.er24>=30?'var(--green)':'var(--accent)';
+    return `<tr>
+      <td class="td-name">
+        <div class="chan-name">${c.name}</div>
+        <div class="chan-link"><a href="${c.url}" target="_blank">${c.url.replace('https://t.me/','@')}</a></div>
+      </td>
+      <td>${c.subs.toLocaleString('ru')}</td>
+      <td>${c.v24.toLocaleString('ru')}</td>
+      <td>${c.v48.toLocaleString('ru')}</td>
+      <td>${c.v72.toLocaleString('ru')}</td>
+      <td>
+        <div class="er-bar">
+          <div class="er-fill" style="width:${erW}px;background:${erCls}"></div>
+          <span class="er-val" style="color:${erCls}">${c.er24}%</span>
+        </div>
+      </td>
+      <td>${fmtD(c.dSubs)}</td>
+      <td>${fmtD(c.dEr,'%',1)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Charts ────────────────────────────────────────────────────────────────────
+function setTab(id, btn) {
+  document.getElementById('tabTable').style.display  = id==='table'  ? 'block':'none';
+  document.getElementById('tabCharts').style.display = id==='charts' ? 'block':'none';
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if (id==='charts') renderCharts();
+}
+
+function destroyChart(c) { if(c){try{c.destroy();}catch(e){}} return null; }
+
+function renderCharts() {
+  if (activeIdx<0) return;
+  const ch = snapshots[activeIdx].channels;
+  const TIP = {backgroundColor:'#111d33',titleColor:'#34d399',bodyColor:'#e8eef8',borderColor:'#1e2d4a',borderWidth:1,padding:10};
+  const G = '#34d399', R = '#f87171', B = '#60a5fa', Y = '#fbbf24';
+
+  // ER chart (top 20)
+  activeChart1 = destroyChart(activeChart1);
+  const erRows = [...ch].sort((a,b)=>b.er24-a.er24).slice(0,20);
+  activeChart1 = new Chart(document.getElementById('chartER'),{
+    type:'bar',
+    data:{labels:erRows.map(c=>c.name.length>20?c.name.slice(0,18)+'…':c.name),datasets:[{
+      data:erRows.map(c=>c.er24),
+      backgroundColor:erRows.map(c=>c.er24>=50?'rgba(251,191,36,.8)':c.er24>=30?'rgba(52,211,153,.8)':'rgba(96,165,250,.7)'),
+      borderRadius:4,barPercentage:.75
+    }]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{
+      title:i=>erRows[i[0].dataIndex].name,
+      label:i=>`ER24: ${i.raw}% · Подп: ${erRows[i.dataIndex].subs.toLocaleString('ru')}`
+    }}},
+    scales:{x:{ticks:{color:'#5a7399',callback:v=>v+'%'},grid:{color:'#1e2d4a'}},y:{ticks:{color:'#e8eef8',font:{size:11},crossAlign:'far'},grid:{display:false}}}}
+  });
+
+  // Subs chart (top 15)
+  activeChart2 = destroyChart(activeChart2);
+  const subRows = [...ch].sort((a,b)=>b.subs-a.subs).slice(0,15);
+  activeChart2 = new Chart(document.getElementById('chartSubs'),{
+    type:'bar',
+    data:{labels:subRows.map(c=>c.name.length>18?c.name.slice(0,16)+'…':c.name),datasets:[{
+      data:subRows.map(c=>c.subs),backgroundColor:'rgba(96,165,250,.75)',borderRadius:4,barPercentage:.75
+    }]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{
+      title:i=>subRows[i[0].dataIndex].name,
+      label:i=>`Подписчики: ${i.raw.toLocaleString('ru')}`
+    }}},
+    scales:{x:{ticks:{color:'#5a7399',font:{size:10},callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#1e2d4a'}},y:{ticks:{color:'#e8eef8',font:{size:10},crossAlign:'far'},grid:{display:false}}}}
+  });
+
+  // Views 24h chart (top 15)
+  activeChart3 = destroyChart(activeChart3);
+  const v24Rows = [...ch].sort((a,b)=>b.v24-a.v24).slice(0,15);
+  activeChart3 = new Chart(document.getElementById('chartViews'),{
+    type:'bar',
+    data:{labels:v24Rows.map(c=>c.name.length>18?c.name.slice(0,16)+'…':c.name),datasets:[{
+      data:v24Rows.map(c=>c.v24),backgroundColor:'rgba(167,139,250,.75)',borderRadius:4,barPercentage:.75
+    }]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{
+      title:i=>v24Rows[i[0].dataIndex].name,
+      label:i=>`Просмотры 24ч: ${i.raw.toLocaleString('ru')}`
+    }}},
+    scales:{x:{ticks:{color:'#5a7399',font:{size:10},callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#1e2d4a'}},y:{ticks:{color:'#e8eef8',font:{size:10},crossAlign:'far'},grid:{display:false}}}}
+  });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+function loadScript(src,cb){
+  const s=document.createElement('script');s.src=src;
+  s.onerror=()=>loadScript('https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js',cb);
+  s.onload=cb;document.head.appendChild(s);
+}
+loadScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',()=>{
+  renderSidebar();
+  renderDashboard();
+});
+</script>
+</body>
+</html>
