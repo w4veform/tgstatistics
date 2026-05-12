@@ -512,14 +512,18 @@ function renderDash(){
   _channels=channels;
   // Update table header
   const hasViews=showViews;
-  document.getElementById('tblHead').innerHTML=`<tr>
-    <th onclick="sortBy('name')">Канал <span class="thi" id="th-name">↕</span></th>
-    <th onclick="sortBy('subs')">Подписчики <span class="thi" id="th-subs">↕</span></th>
-    ${hasViews?'<th onclick="sortBy('v24')">Просм. 24ч <span class="thi" id="th-v24">↕</span></th>':''}
-    <th onclick="sortBy('er24')">ER <span class="thi" id="th-er24">↕</span></th>
-    <th onclick="sortBy('dSubs')">Δ Подп. <span class="thi" id="th-dSubs">↕</span></th>
-    <th onclick="sortBy('dEr')">Δ ER <span class="thi" id="th-dEr">↕</span></th>
-  </tr>`;
+ document.getElementById('tblHead').innerHTML=`<tr>
+  <th onclick="sortBy('name')">Канал <span class="thi" id="th-name">↕</span></th>
+  <th onclick="sortBy('subs')">Подписчики <span class="thi" id="th-subs">↕</span></th>
+
+  ${hasViews ? `<th onclick="sortBy('v24')">
+    Просм. 24ч <span class="thi" id="th-v24">↕</span>
+  </th>` : ''}
+
+  <th onclick="sortBy('er24')">ER <span class="thi" id="th-er24">↕</span></th>
+  <th onclick="sortBy('dSubs')">Δ Подп. <span class="thi" id="th-dSubs">↕</span></th>
+  <th onclick="sortBy('dEr')">Δ ER <span class="thi" id="th-dEr">↕</span></th>
+</tr>`;
   filterTable();
   if(document.getElementById('tabCharts').style.display!=='none') renderCharts();
 }
