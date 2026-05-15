@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GISMEDIA · Аналитика</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico"/>
+<link rel="shortcut icon" href="favicon.ico"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f8fa;--surface:#fff;--surface2:#f2f3f5;
+  --border:#e8eaed;--border2:#d0d4db;
+  --text:#0f1923;--sub:#5f6b7a;--muted:#99a3ae;
+  --red:#d9231b;--rdbg:rgba(217,35,27,.07);--rdmid:rgba(217,35,27,.15);
+  --green:#15803d;--gnbg:rgba(21,128,61,.07);
+  --amber:#92400e;--ambg:rgba(146,64,14,.07);
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+body{background:var(--bg);font-family:-apple-system,'Segoe UI',system-ui,sans-serif;color:var(--text);min-height:100vh;font-size:13px}
+
+/* ── LOADER ── */
+#loader{position:fixed;inset:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .6s ease,visibility .6s}
+#loader.out{opacity:0;visibility:hidden}
+.ld-inner{display:flex;flex-direction:column;align-items:center;gap:20px}
+.ld-frags{position:relative;width:120px;height:120px}
+.frag{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center;opacity:0}
+.f0{clip-path:polygon(0 0,50% 0,50% 50%,0 50%);animation:fly0 .65s .05s cubic-bezier(.34,1.3,.64,1) forwards}
+.f1{clip-path:polygon(50% 0,100% 0,100% 50%,50% 50%);animation:fly1 .65s .1s cubic-bezier(.34,1.3,.64,1) forwards}
+.f2{clip-path:polygon(0 50%,50% 50%,50% 100%,0 100%);animation:fly2 .65s .15s cubic-bezier(.34,1.3,.64,1) forwards}
+.f3{clip-path:polygon(50% 50%,100% 50%,100% 100%,50% 100%);animation:fly3 .65s .2s cubic-bezier(.34,1.3,.64,1) forwards}
+@keyframes fly0{0%{opacity:0;transform:translate(-50px,-50px) scale(.3)}100%{opacity:1;transform:none}}
+@keyframes fly1{0%{opacity:0;transform:translate(50px,-50px) scale(.3)}100%{opacity:1;transform:none}}
+@keyframes fly2{0%{opacity:0;transform:translate(-50px,50px) scale(.3)}100%{opacity:1;transform:none}}
+@keyframes fly3{0%{opacity:0;transform:translate(50px,50px) scale(.3)}100%{opacity:1;transform:none}}
+.ld-bar{width:120px;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+.ld-fill{height:100%;width:0;background:var(--red);border-radius:2px;animation:fillBar .9s .75s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes fillBar{to{width:100%}}
+
+/* ── TOP NAV ── */
+#app{display:flex;flex-direction:column;min-height:100vh;opacity:0;transition:opacity .5s}
+#app.visible{opacity:1}
+.topnav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.nav-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.nav-logo img{height:28px;width:auto;object-fit:contain}
+.nav-logo-name{font-size:13px;font-weight:800;color:var(--red);letter-spacing:.5px}
+.nav-div{width:1px;height:20px;background:var(--border);flex-shrink:0}
+.mode-sw{display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:3px}
+.msb{background:none;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--sub);transition:all .15s}
+.msb.active{background:#fff;color:var(--red);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.snap-sel{position:relative;flex-shrink:0}
+.snap-sel-btn{display:flex;align-items:center;gap:6px;background:var(--surface2);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);transition:all .15s;white-space:nowrap;max-width:220px}
+.snap-sel-btn:hover{background:var(--border)}
+.snap-sel-btn .arrow{color:var(--muted);font-size:10px;flex-shrink:0}
+.snap-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:220px;z-index:100;padding:4px;max-height:320px;overflow-y:auto}
+.snap-dropdown.open{display:block}
+.snap-opt{padding:8px 12px;border-radius:7px;cursor:pointer;transition:background .1s;font-size:12px}
+.snap-opt:hover{background:var(--surface2)}
+.snap-opt.active{background:var(--rdbg);color:var(--red)}
+.snap-opt-date{font-weight:700}
+.snap-opt-meta{color:var(--muted);font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px}
+.snap-note-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--amber)}
+.nav-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nav-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--sub);transition:all .15s;display:flex;align-items:center;gap:5px;font-weight:500}
+.nav-btn:hover{border-color:var(--border2);color:var(--text)}
+.nav-btn.primary{background:var(--red);color:#fff;border-color:var(--red);font-weight:600}
+.nav-btn.primary:hover{background:#b01c15}
+.vs-pill{font-size:11px;color:var(--sub);background:var(--surface2);border-radius:20px;padding:3px 10px;white-space:nowrap}
+
+/* ── MAIN ── */
+.content{flex:1;padding:20px 24px;max-width:1200px;width:100%;margin:0 auto}
+
+/* ── MINI STATS BAR ── */
+.stats-bar{display:flex;gap:0;margin-bottom:18px;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.sb-item{flex:1;padding:12px 16px;border-right:1px solid var(--border);position:relative}
+.sb-item:last-child{border-right:none}
+.sb-val{font-size:18px;font-weight:900;letter-spacing:-0.5px;line-height:1;color:var(--text)}
+.sb-lbl{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.sb-delta{font-size:11px;font-weight:700;margin-top:4px}
+.sb-delta.pos{color:var(--green)}.sb-delta.neg{color:var(--red)}.sb-delta.neu{color:var(--muted)}
+.sb-accent{position:absolute;bottom:0;left:0;width:100%;height:2px}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;max-width:280px}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);width:14px;height:14px}
+.search{width:100%;background:#fff;border:1px solid var(--border);border-radius:8px;padding:7px 10px 7px 32px;font-size:13px;color:var(--text);outline:none;transition:border .15s}
+.search:focus{border-color:var(--red)}
+.fsel{background:#fff;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;cursor:pointer;font-weight:500}
+.tcount{font-size:11px;color:var(--muted)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.view-toggle{display:flex;background:var(--surface2);border-radius:8px;padding:2px;gap:2px}
+.vt{background:none;border:none;border-radius:6px;padding:5px 9px;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s;line-height:1}
+.vt.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* ── MINI CHARTS ── */
+.mini-charts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.mc{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.mc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.mc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.mc-val{font-size:13px;font-weight:800;color:var(--text)}
+canvas.mini{width:100%!important;height:56px!important}
+
+/* ── TABLE ── */
+.tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{position:sticky;top:52px;z-index:10}
+thead th{background:#fff;padding:9px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);cursor:pointer;user-select:none;border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700}
+thead th:hover{color:var(--text)}
+.thi{margin-left:2px;opacity:.3;font-size:9px}
+th.sorted .thi{opacity:1;color:var(--red)}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#fafbfc}
+td{padding:10px 14px;white-space:nowrap}
+.td-name{white-space:normal;max-width:200px}
+.cn{font-weight:600;font-size:13px;color:var(--text)}
+.cl a{font-size:10px;color:var(--muted);text-decoration:none;transition:color .1s}
+.cl a:hover{color:var(--red)}
+.delta{font-weight:700;font-size:12px}
+.delta.pos{color:var(--green)}.delta.neg{color:var(--red)}.delta.neu{color:var(--muted)}
+.erb{display:flex;align-items:center;gap:7px}
+.erbg{width:40px;height:3px;border-radius:2px;background:var(--surface2);flex-shrink:0;overflow:hidden}
+.erf{height:100%;border-radius:2px}
+.erv{font-weight:700}
+
+/* ── CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.chan-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all .18s cubic-bezier(.34,1.2,.64,1);position:relative;overflow:hidden}
+.chan-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--red);opacity:0;transition:opacity .18s}
+.chan-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.07);border-color:var(--border2)}
+.chan-card:hover::before{opacity:1}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:6px}
+.card-name{font-weight:700;font-size:13px;line-height:1.3;flex:1;color:var(--text)}
+.card-link a{font-size:10px;color:var(--muted);text-decoration:none}
+.card-link a:hover{color:var(--red)}
+.card-er-val{font-size:18px;font-weight:900;color:var(--red);flex-shrink:0}
+.card-row{display:flex;justify-content:space-between;font-size:12px;margin-top:6px}
+.cr-lbl{color:var(--muted)}
+.cr-val{font-weight:700}
+.card-bar{height:2px;background:var(--surface2);border-radius:2px;margin-top:10px;overflow:hidden}
+.card-bar-fill{height:100%;border-radius:2px;background:var(--red);transition:width .4s}
+.card-deltas{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.card-views-tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0f1923;color:#fff;border-radius:8px;padding:7px 11px;font-size:11px;white-space:nowrap;z-index:20;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.card-views-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#0f1923}
+.chan-card:hover .card-views-tip{display:block}
+
+/* ── DETAIL PANEL ── */
+.panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:200;backdrop-filter:blur(2px)}
+.panel-overlay.open{display:block}
+.detail-panel{position:fixed;right:0;top:0;bottom:0;width:380px;background:#fff;border-left:1px solid var(--border);z-index:201;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.detail-panel.open{transform:translateX(0)}
+.dp-head{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px}
+.dp-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;padding:2px;border-radius:4px;flex-shrink:0}
+.dp-close:hover{color:var(--text)}
+.dp-name{font-size:15px;font-weight:800;line-height:1.3;flex:1}
+.dp-link a{font-size:11px;color:var(--muted);text-decoration:none}
+.dp-link a:hover{color:var(--red)}
+.dp-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px}
+.dp-sect-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px}
+.dp-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dp-m{background:var(--surface2);border-radius:8px;padding:10px 12px}
+.dp-m-val{font-size:16px;font-weight:900;line-height:1}
+.dp-m-lbl{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.history-list{display:flex;flex-direction:column;gap:6px}
+.hist-item{background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hist-date{font-size:11px;font-weight:600;color:var(--sub)}
+.hist-vals{display:flex;gap:12px}
+.hist-v{text-align:right}
+.hist-v-val{font-size:12px;font-weight:700}
+.hist-v-lbl{font-size:9px;color:var(--muted);text-transform:uppercase}
+.hist-delta{font-size:11px;font-weight:700}
+.hist-delta.pos{color:var(--green)}.hist-delta.neg{color:var(--red)}.hist-delta.neu{color:var(--muted)}
+.dp-chart-wrap{height:120px;position:relative}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.overlay.open{display:flex}
+.modal{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px;width:540px;max-width:95vw;box-shadow:0 16px 40px rgba(0,0,0,.1);display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:15px;font-weight:800}
+.modal-note{font-size:12px;color:var(--sub);line-height:1.55;background:var(--surface2);border-radius:8px;padding:10px 12px}
+.inp-lbl{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+textarea,.inp{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;width:100%;transition:border .15s}
+textarea:focus,.inp:focus{border-color:var(--red);background:#fff}
+textarea{font-family:monospace;font-size:12px;resize:vertical;min-height:140px}
+.modal-btns{display:flex;gap:8px}
+.btn-cancel{background:var(--surface2);border:none;color:var(--sub);border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;flex:1}
+.btn-save{background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;flex:2;transition:background .15s}
+.btn-save:hover{background:#b01c15}
+.parse-err{color:var(--red);font-size:12px;display:none;font-weight:600}
+.csv-drop{border:2px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.csv-drop:hover{border-color:var(--red);background:var(--rdbg)}
+.csv-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.csv-drop-name{font-size:12px;font-weight:600;color:var(--red);margin-top:4px}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInLeft{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.row-anim{animation:fadeInLeft .2s ease both}
+.card-anim{animation:fadeInUp .22s ease both}
+
+/* ── EMPTY ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:12px;text-align:center}
+.empty-icon{font-size:36px;opacity:.2}
+.empty-title{font-size:16px;font-weight:800;color:var(--muted)}
+.empty-sub{font-size:13px;color:var(--muted);max-width:260px;line-height:1.6}
+
+/* ── SYNC STATUS ── */
+.sync-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);padding:4px 10px;border-radius:20px;background:var(--surface2);cursor:pointer;transition:all .15s}
+.sync-pill:hover{background:var(--border)}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sdot.on{background:var(--green)}.sdot.off{background:var(--muted)}.sdot.spin{background:var(--amber);animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+@media(max-width:768px){
+  .topnav{padding:0 14px;gap:10px}
+  .content{padding:14px}
+  .mini-charts{grid-template-columns:1fr}
+  .cards-grid{grid-template-columns:1fr 1fr}
+  .stats-bar{flex-wrap:wrap}
+  .sb-item{min-width:45%}
+  .detail-panel{width:100%}
+}
+@media(max-width:480px){.cards-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="ld-inner">
+    <div class="ld-frags" id="ldFrags"></div>
+    <div class="ld-bar"><div class="ld-fill"></div></div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="nav-logo">
+      <img id="navLogo" src="" alt="GISMEDIA"/>
+    </div>
+    <div class="nav-div"></div>
+    <div class="mode-sw">
+      <button class="msb active" id="modeDaily" onclick="setMode('daily')">Ежедневно</button>
+      <button class="msb" id="modeMonthly" onclick="setMode('monthly')">Ежемесячно</button>
+    </div>
+    <div class="snap-sel" id="snapSel">
+      <button class="snap-sel-btn" onclick="toggleSnapDrop()">
+        <span id="snapSelLabel">Выбери снапшот</span>
+        <span class="arrow">▾</span>
+      </button>
+      <div class="snap-dropdown" id="snapDrop"></div>
+    </div>
+    <span class="vs-pill" id="vsPill" style="display:none"></span>
+    <div class="nav-actions">
+      <div class="sync-pill" id="syncPill" onclick="openModal('settings')">
+        <div class="sdot off" id="syncDot"></div>
+        <span id="syncTxt">Локально</span>
+      </div>
+      <button class="nav-btn" id="noteBtn" onclick="openNoteModal()" style="display:none">📝 Заметка</button>
+      <button class="nav-btn primary" id="addBtn" onclick="openModal('daily')">＋ Снапшот</button>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="empty" id="emptyEl">
+      <div class="empty-icon">📡</div>
+      <div class="empty-title">Нет данных</div>
+      <div class="empty-sub">Добавь первый снапшот из TrustStat или переключись на ежемесячный режим.</div>
+    </div>
+
+    <div id="dashEl" style="display:none">
+      <!-- STATS BAR -->
+      <div class="stats-bar" id="statsBar"></div>
+
+      <!-- MINI CHARTS -->
+      <div class="mini-charts" id="miniCharts">
+        <div class="mc"><div class="mc-head"><span class="mc-title">ER топ-10</span><span class="mc-val" id="mc1val"></span></div><canvas class="mini" id="mcER"></canvas></div>
+        <div class="mc"><div class="mc-head"><span class="mc-title">Подписчики топ-10</span><span class="mc-val" id="mc2val"></span></div><canvas class="mini" id="mcSubs"></canvas></div>
+        <div class="mc"><div class="mc-head"><span class="mc-title">Δ Прирост</span><span class="mc-val" id="mc3val"></span></div><canvas class="mini" id="mcDelta"></canvas></div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="search" type="text" id="searchQ" placeholder="Поиск канала…" oninput="filterView()"/>
+        </div>
+        <select class="fsel" id="fselEl" onchange="filterView()">
+          <option value="all">Все каналы</option>
+          <option value="up">Растут ▲</option>
+          <option value="down">Теряют ▼</option>
+          <option value="er30">ER ≥ 30%</option>
+          <option value="er50">ER ≥ 50%</option>
+        </select>
+        <span class="tcount" id="tcount"></span>
+        <div class="tb-right">
+          <div class="view-toggle">
+            <button class="vt active" id="vtList" onclick="setView('list')" title="Список">☰</button>
+            <button class="vt" id="vtCards" onclick="setView('cards')" title="Карточки">⊞</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIST VIEW -->
+      <div id="listView">
+        <div class="tbl-wrap">
+          <table><thead id="tblHead"></thead><tbody id="tbody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- CARDS VIEW -->
+      <div id="cardsView" style="display:none">
+        <div class="cards-grid" id="cardsGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="panel-overlay" id="panelOverlay" onclick="closePanel()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="dp-head">
+    <div style="flex:1">
+      <div class="dp-name" id="dpName"></div>
+      <div class="dp-link" id="dpLink"></div>
+    </div>
+    <button class="dp-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="dp-body" id="dpBody"></div>
+</div>
+
+<!-- MODAL: Daily snap -->
+<div class="overlay" id="modalDaily" onclick="if(event.target===this)closeModal('daily')">
+  <div class="modal">
+    <h2>Новый снапшот</h2>
+    <div class="modal-note">Скопируй весь текст из TrustStat и вставь сюда.</div>
+    <textarea id="pasteArea" placeholder="🎭 Название (http://t.me/...) 👤 1 234&#10;👁️ 24ч: 456 | 48ч: 567 | 72ч: 678&#10;📈 ER24: 37,00%"></textarea>
+    <div>
+      <div class="inp-lbl">Заметка (опционально)</div>
+      <input class="inp" type="text" id="snapNoteInput" placeholder="Запустили рекламу, сезонный спад…"/>
+    </div>
+    <div class="parse-err" id="dailyErr">Не удалось распознать. Убедись что вставил текст из TrustStat.</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('daily')">Отмена</button>
+      <button class="btn-save" onclick="saveSnap()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Monthly -->
+<div class="overlay" id="modalMonthly" onclick="if(event.target===this)closeModal('monthly')">
+  <div class="modal">
+    <h2>Добавить месяц</h2>
+    <div class="modal-note">CSV из Notion: Название канала, Подписчики (мес1), Подписчики (мес2), ER % (мес1), ER % (мес2), Статус. Каналы без данных скрываются автоматически.</div>
+    <div><div class="inp-lbl">Название месяца</div><input class="inp" type="text" id="monthNameInp" placeholder="Июнь 2025"/></div>
+    <div>
+      <div class="inp-lbl">CSV файл</div>
+      <div class="csv-drop"><input type="file" accept=".csv" id="csvFile" onchange="handleCSV(this)"/>
+        <div>📂 Нажми или перетащи CSV</div><div class="csv-drop-name" id="csvName"></div>
+      </div>
+    </div>
+    <div class="parse-err" id="monthlyErr">Не удалось прочитать CSV.</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('monthly')">Отмена</button>
+      <button class="btn-save" onclick="saveMonth()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Note -->
+<div class="overlay" id="modalNote" onclick="if(event.target===this)closeModal('note')">
+  <div class="modal" style="width:380px">
+    <h2>Заметка к снапшоту</h2>
+    <textarea id="noteText" style="min-height:80px" placeholder="Добавь контекст — запустили рекламу, упал алгоритм…"></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('note')">Отмена</button>
+      <button class="btn-save" onclick="saveNote()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Settings -->
+<div class="overlay" id="modalSettings" onclick="if(event.target===this)closeModal('settings')">
+  <div class="modal">
+    <h2>GitHub Gist · Синхронизация</h2>
+    <div class="modal-note">
+      1. <a href="https://gist.github.com" target="_blank" style="color:var(--red)">gist.github.com</a> → Create public gist → filename: <b>data.json</b> → content: <code>{"snaps":[],"notes":{}}</code><br/>
+      2. github.com → Settings → Developer settings → Tokens (classic) → галочка <b>gist</b><br/>
+      3. Вставь ниже. Читают все, пишешь только ты.
+    </div>
+    <div><div class="inp-lbl">Gist ID</div><input class="inp" type="text" id="binIdInp" placeholder="a1b2c3d4... (из URL гиста)"/></div>
+    <div><div class="inp-lbl">GitHub Token</div><input class="inp" type="password" id="masterKeyInp" placeholder="ghp_xxxxxxxxxxxx"/></div>
+    <div class="parse-err" id="settingsErr"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('settings')">Отмена</button>
+      <button class="btn-save" onclick="testAndSaveSettings()">Подключить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── LOGO ──────────────────────────────────────────────────────────────────────
+const LOGO_120 = "data:image/png;base64,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";
+const LOGO_44  = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAsCAYAAAAehFoBAAAFlklEQVR42u2WbYhUVRjH/885d3ZnxllbF1crTPNDUSG+pKmzo3t319VNMPHLVaIIghLxS4UEfQimoaKiRPCbvUqW2d5IejEo0G1Fy8qoSCuMwHx33ffZ2ZnZe87z9GFm1t1tczMSguYP98Plcs753eft/IGyyiqrrLLKKqus/6gkmVQCqP8+KKAE0Fe5jMTztLiuU9yDBKBrH1HvMuhZd81tnfXNt5cA/nKd543+OaVwzVilFJkRqT/ddPfc9LJlO4N4POhdWvcaAJQiN07JFMhEqLehuSUTT7yciy/9IRNfcuj35uYbx/6s809BWz1Pe/BBPix83wLAmRUrFtTkcpt1pvuBCiUVgIaEnC/HC5cAilIpBhF6m5o2hBOJLZVs7gIIYAMojUh6cD6Ac/A8VTrjqoHF8zR8n6m4wQnvwdrpnafXhLLp+5z+vsaQoxWEASNDUHACwa8ABA0NjPb24awQwB1NLcurcumnw4MDLoQBywwBg4SsFTLRaAcA+COr5So7nsj3LYHk4srViUw88crMU8eOT86lX4+AV4QgCsZYEQGYNSIRhRuun/7pi29OuvDbQGQ4soB01i99rmaw72DYGhdBYNkIi5BikAIcbZS62HHTvJ8BwPN9vipg8aAplWIikh7XXZdbuuTAtHTPoSiChyqZaxEEFoZtgQdaAIZSyLP5fSBnZ8/+7P1EkD/F4roOXFcBgGNDgxoCMA8JlCZAAQwFYWiSrOPsn//W1ox4nqbCvhMDl0YL+bAdTU3Ls/F4e/VQbm8luBE2EBhrAYgAWiBaREhEoEgAR+uMsc92V89+Z6gy9MtM389Se7tBQwMDQPrmmW8YoSEAFVICIgAQBQHZiuiu8ZjUlWYpAfKUCPUtq3tuSiZ9MMxBPYyxsNaKgABoEaERa0CAtY7Od1WGH6k5fOTVRbu2nzpzy4yBS83Na3vrlm+iVIoB4MfFiy8Z4gslSkAgIIZWlBU5/mN93YFSCU4InCzAcpu3ObYlnvhksjVPOMxcjKgGoEGAiIxdytBaZxm9Uz8/uJ2oMPvv+u77nVNN9gMgWFPK3OlwmEXEgAqHEQFKRKA05aOxbY2plIHr6gkjLAA9BeDoxmR00alvP66CaYGRQISUFCJaAB0DSwRWpJAnOTkQooc37jga6mlyH8osW/xFdZC9JxPk3z4ZT2woZa65ra3GgZpWKAYiQDGUowYNn/x5wbzdAhDa2+2EwL7nKSLiW47t3xkjcdnYIREJ/ekeJRr5CAQMrdRAuOpQvnr6T1t3bXo3ls+8ohidPbpiVezw0fvnb92aKTXdlJ7+RSFCFMKmeHEwNFEuHH6+btu2LFx3VLMNnzt2xpLv2w7Xvbc2n9sNYwJAQizKEkELWBRgh4lBChAGUSF1zNY4jtIEymh6tXvG9OSsPR+eK/VEqcwJxOlE3d4YB+vYAgyCA2AQcnzf6tV3eqmUASDjAY+OsO9zW1ubMyk3mAQsAhIdkIJylBZhVgBBhxw4jgMiLQKCUjov0p8XzkIrzeBsbyS2turQVw/P2vPhOQF0cTQxPE8RwJ31dStjYtblRN7rqIo0nq+duiTn6O6cjjyzPpUagufReLCjgFuL827OMy8s0MCM/pB6LD2tal5/bfUdfdp5SVVUqLymrr5K/WRXOPRoRuvDRmv0h8OPn7j+ulsvTp4yJ6MrD/bHqu+tOXDgI1m4MFS80ezYTheRaLejnogc+ca7YX/75zP37fu6Kxp9smvR3L0YZzJc0TFdbGhpOd/YvH7s90v19U+fWbWqrvTuieizLS3LR02XZGsFALROZC2JLttQz9PieTop8s98844dO0IAQVzXkWRSFa/kYQBxXWek8yo6NSq5tb/rYf9VYy9/4a5GHiIAtY7xsdfccJdVVllllVVWWWX93/QHkN+4Fk+EBIEAAAAASUVORK5CYII=";
+document.getElementById('navLogo').src = LOGO_44;
+// Loader frags
+(function(){
+  const wrap = document.getElementById('ldFrags');
+  const clips = ['polygon(0 0,50% 0,50% 50%,0 50%)','polygon(50% 0,100% 0,100% 50%,50% 50%)','polygon(0 50%,50% 50%,50% 100%,0 100%)','polygon(50% 50%,100% 50%,100% 100%,50% 100%)'];
+  const classes = ['f0','f1','f2','f3'];
+  clips.forEach((clip,i) => {
+    const d = document.createElement('div');
+    d.className = 'frag ' + classes[i];
+    d.style.backgroundImage = 'url(' + LOGO_120 + ')';
+    d.style.clipPath = clip;
+    wrap.appendChild(d);
+  });
+})();
+
+// ── BUILT-IN MONTHLY ──────────────────────────────────────────────────────────
+const BUILTIN = [
+  {id:'apr25',label:'Апрель 2025',date:'7 апреля',channels:[{"n": "Ищу тебя Горловка", "subs": 1874, "er24": 39.0}, {"n": "Ищу тебя Сафоново", "subs": 534, "er24": 62.0}, {"n": "Ищу тебя Краснодар", "subs": 3657, "er24": 12.0}, {"n": "Ищу тебя Новокузнецк", "subs": 5627, "er24": 34.0}, {"n": "Ищу тебя Питер", "subs": 7079, "er24": 6.0}, {"n": "в барнауле любят", "subs": 3726, "er24": 16.0}, {"n": "Ищу тебя Искитим", "subs": 818, "er24": 32.0}, {"n": "Ищу тебя вельск", "subs": 1720, "er24": 42.0}, {"n": "в Подольске любят", "subs": 4089, "er24": 13.0}, {"n": "В Марий Эл любят", "subs": 4063, "er24": 11.0}, {"n": "в калике любят", "subs": 3093, "er24": 15.0}, {"n": "Ищу тебя Нефтекамск", "subs": 1354, "er24": 49.0}, {"n": "в жел-доре любят", "subs": 2051, "er24": 16.0}, {"n": "Ищу тебя Киров", "subs": 6338, "er24": 30.0}, {"n": "в Кузнецке любят", "subs": 1575, "er24": 13.0}, {"n": "в Коврове любят", "subs": 3216, "er24": 18.0}, {"n": "В ГУРЬЕВСКЕ ЛЮБЯТ", "subs": 1595, "er24": 30.0}, {"n": "в воронеже любят", "subs": 4366, "er24": 5.0}, {"n": "В Ленинск-Кузнецком любят", "subs": 1215, "er24": 43.0}, {"n": "Ищу тебя Ковров", "subs": 1551, "er24": 39.0}, {"n": "В Красноярске любят", "subs": 2611, "er24": 11.0}, {"n": "шип шип бурятии", "subs": 15900, "er24": 22.0}, {"n": "в орехово любят", "subs": 2885, "er24": 12.0}, {"n": "в красноярском крае любят", "subs": 1098, "er24": 12.0}, {"n": "в Волгодонске любят", "subs": 2578, "er24": 10.0}, {"n": "в чувашии любят", "subs": 2489, "er24": 15.0}, {"n": "В Краснодаре любят", "subs": 4029, "er24": 7.0}, {"n": "Ищу тебя Тюмень", "subs": 2835, "er24": 31.0}, {"n": "в междуреченске любят", "subs": 3205, "er24": 29.0}, {"n": "в Искитиме любят", "subs": 3067, "er24": 36.0}, {"n": "Ищу тебя Подольск", "subs": 2040, "er24": 35.0}, {"n": "Ищу тебя Сургут", "subs": 1206, "er24": 34.0}, {"n": "В Псковской области любят", "subs": 2558, "er24": 15.0}, {"n": "в Бурятии любят", "subs": 8798, "er24": 6.0}, {"n": "в нв любят", "subs": 3557, "er24": 14.0}, {"n": "Ищу тебя Улан-Удэ", "subs": 3555, "er24": 15.0}, {"n": "Ищу тебя Псков", "subs": 1488, "er24": 21.0}, {"n": "Ищу тебя Красноярск", "subs": 2782, "er24": 21.0}, {"n": "В Кодинске любят", "subs": 719, "er24": 47.0}, {"n": "В Кирове любят", "subs": 5759, "er24": 9.0}, {"n": "в НПР любят", "subs": 1124, "er24": 24.0}, {"n": "Братск любит", "subs": 3326, "er24": 15.0}, {"n": "в нв не любят", "subs": 2743, "er24": 12.0}, {"n": "УЗНАЙ ЗА БРАТСК", "subs": 8258, "er24": 26.0}, {"n": "в подмосковье любят", "subs": 1837, "er24": 9.0}, {"n": "Ищу тебя Нижневартовск", "subs": 8466, "er24": 33.0}, {"n": "в сургуте любят", "subs": 2306, "er24": 17.0}, {"n": "Ищу тебя Братск", "subs": 1429, "er24": 25.0}, {"n": "Ищу тебя Томск", "subs": 1400, "er24": 16.0}, {"n": "Ищу тебя Иркутск", "subs": 7077, "er24": 30.0}, {"n": "в сафоново любят", "subs": 1976, "er24": 28.0}, {"n": "в тюмени любят", "subs": 3452, "er24": 8.0}, {"n": "Ищу тебя Салехард", "subs": 1311, "er24": 0.0}, {"n": "В Нефтекамске любят", "subs": 2127, "er24": 23.0}, {"n": "Ищу тебя Желдор", "subs": 946, "er24": 0}, {"n": "В салехарде любят", "subs": 2620, "er24": 23.0}, {"n": "Ищу тебя Междуреченск", "subs": 2741, "er24": 47.0}, {"n": "в благовещенске любят", "subs": 1200, "er24": 20.0}, {"n": "в мурино любят", "subs": 736, "er24": 0}, {"n": "В России любят", "subs": 5773, "er24": 14.0}, {"n": "Ищу тебя Бугуруслан", "subs": 4529, "er24": 40.0}, {"n": "Ищу тебя Соль-Илецк", "subs": 4472, "er24": 25.0}, {"n": "В Нолинске любят", "subs": 1379, "er24": 34.0}]},
+  {id:'may25',label:'Май 2025',date:'7 мая',channels:[{"n": "Ищу тебя Горловка", "subs": 1839, "er24": 28.0, "dSubs": -35, "dEr": -11.0, "dp": -1.9, "prevSubs": 1874}, {"n": "Ищу тебя Сафоново", "subs": 583, "er24": 50.0, "dSubs": 49, "dEr": -12.0, "dp": 9.2, "prevSubs": 534}, {"n": "Ищу тебя Краснодар", "subs": 3568, "er24": 13.0, "dSubs": -89, "dEr": 1.0, "dp": -2.4, "prevSubs": 3657}, {"n": "Ищу тебя Барнаул", "subs": 446, "er24": 0.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}, {"n": "Ищу тебя Новокузнецк", "subs": 5939, "er24": 36.0, "dSubs": 312, "dEr": 2.0, "dp": 5.5, "prevSubs": 5627}, {"n": "Ищу тебя Питер", "subs": 6900, "er24": 6.0, "dSubs": -179, "dEr": 0.0, "dp": -2.5, "prevSubs": 7079}, {"n": "в барнауле любят", "subs": 3730, "er24": 15.0, "dSubs": 4, "dEr": -1.0, "dp": 0.1, "prevSubs": 3726}, {"n": "Ищу тебя Искитим", "subs": 1040, "er24": 59.0, "dSubs": 222, "dEr": 27.0, "dp": 27.1, "prevSubs": 818}, {"n": "Ищу тебя вельск", "subs": 1647, "er24": 25.0, "dSubs": -73, "dEr": -17.0, "dp": -4.2, "prevSubs": 1720}, {"n": "в Подольске любят", "subs": 3994, "er24": 12.0, "dSubs": -95, "dEr": -1.0, "dp": -2.3, "prevSubs": 4089}, {"n": "В Марий Эл любят", "subs": 3958, "er24": 9.0, "dSubs": -105, "dEr": -2.0, "dp": -2.6, "prevSubs": 4063}, {"n": "в калике любят", "subs": 3019, "er24": 11.0, "dSubs": -74, "dEr": -4.0, "dp": -2.4, "prevSubs": 3093}, {"n": "Ищу тебя Нефтекамск", "subs": 1492, "er24": 42.0, "dSubs": 138, "dEr": -7.0, "dp": 10.2, "prevSubs": 1354}, {"n": "в жел-доре любят", "subs": 2043, "er24": 15.0, "dSubs": -8, "dEr": -1.0, "dp": -0.4, "prevSubs": 2051}, {"n": "Ищу тебя Киров", "subs": 6815, "er24": 25.0, "dSubs": 477, "dEr": -5.0, "dp": 7.5, "prevSubs": 6338}, {"n": "в Кузнецке любят", "subs": 1531, "er24": 11.0, "dSubs": -44, "dEr": -2.0, "dp": -2.8, "prevSubs": 1575}, {"n": "в Коврове любят", "subs": 3126, "er24": 18.0, "dSubs": -90, "dEr": 0.0, "dp": -2.8, "prevSubs": 3216}, {"n": "В ГУРЬЕВСКЕ ЛЮБЯТ", "subs": 1547, "er24": 26.0, "dSubs": -48, "dEr": -4.0, "dp": -3.0, "prevSubs": 1595}, {"n": "в воронеже любят", "subs": 4270, "er24": 3.0, "dSubs": -96, "dEr": -2.0, "dp": -2.2, "prevSubs": 4366}, {"n": "В Ленинск-Кузнецком любят", "subs": 1235, "er24": 34.0, "dSubs": 20, "dEr": -9.0, "dp": 1.6, "prevSubs": 1215}, {"n": "Ищу тебя Ковров", "subs": 1569, "er24": 35.0, "dSubs": 18, "dEr": -4.0, "dp": 1.2, "prevSubs": 1551}, {"n": "В Красноярске любят", "subs": 2525, "er24": 9.0, "dSubs": -86, "dEr": -2.0, "dp": -3.3, "prevSubs": 2611}, {"n": "шип шип бурятии", "subs": 15985, "er24": 20.0, "dSubs": 85, "dEr": -2.0, "dp": 0.5, "prevSubs": 15900}, {"n": "в орехово любят", "subs": 2856, "er24": 15.0, "dSubs": -29, "dEr": 3.0, "dp": -1.0, "prevSubs": 2885}, {"n": "в красноярском крае любят", "subs": 1069, "er24": 8.0, "dSubs": -29, "dEr": -4.0, "dp": -2.6, "prevSubs": 1098}, {"n": "в Волгодонске любят", "subs": 2501, "er24": 6.0, "dSubs": -77, "dEr": -4.0, "dp": -3.0, "prevSubs": 2578}, {"n": "в чувашии любят", "subs": 2421, "er24": 23.0, "dSubs": -68, "dEr": 8.0, "dp": -2.7, "prevSubs": 2489}, {"n": "В Краснодаре любят", "subs": 3886, "er24": 4.0, "dSubs": -143, "dEr": -3.0, "dp": -3.5, "prevSubs": 4029}, {"n": "Ищу тебя Тюмень", "subs": 2909, "er24": 31.0, "dSubs": 74, "dEr": 0.0, "dp": 2.6, "prevSubs": 2835}, {"n": "в междуреченске любят", "subs": 3144, "er24": 26.0, "dSubs": -61, "dEr": -3.0, "dp": -1.9, "prevSubs": 3205}, {"n": "в Искитиме любят", "subs": 2987, "er24": 37.0, "dSubs": -80, "dEr": 1.0, "dp": -2.6, "prevSubs": 3067}, {"n": "Ищу тебя Подольск", "subs": 2043, "er24": 29.0, "dSubs": 3, "dEr": -6.0, "dp": 0.1, "prevSubs": 2040}, {"n": "Ищу тебя Сургут", "subs": 1232, "er24": 43.0, "dSubs": 26, "dEr": 9.0, "dp": 2.2, "prevSubs": 1206}, {"n": "В Псковской области любят", "subs": 2508, "er24": 9.0, "dSubs": -50, "dEr": -6.0, "dp": -2.0, "prevSubs": 2558}, {"n": "в Бурятии любят", "subs": 8497, "er24": 6.0, "dSubs": -301, "dEr": 0.0, "dp": -3.4, "prevSubs": 8798}, {"n": "в нв любят", "subs": 3295, "er24": 13.0, "dSubs": -262, "dEr": -1.0, "dp": -7.4, "prevSubs": 3557}, {"n": "Ищу тебя Улан-Удэ", "subs": 3510, "er24": 13.0, "dSubs": -45, "dEr": -2.0, "dp": -1.3, "prevSubs": 3555}, {"n": "Ищу тебя Псков", "subs": 1521, "er24": 17.0, "dSubs": 33, "dEr": -4.0, "dp": 2.2, "prevSubs": 1488}, {"n": "Ищу тебя Красноярск", "subs": 2747, "er24": 19.0, "dSubs": -35, "dEr": -2.0, "dp": -1.3, "prevSubs": 2782}, {"n": "В Кодинске любят", "subs": 714, "er24": 28.0, "dSubs": -5, "dEr": -19.0, "dp": -0.7, "prevSubs": 719}, {"n": "В Кирове любят", "subs": 5669, "er24": 6.0, "dSubs": -90, "dEr": -3.0, "dp": -1.6, "prevSubs": 5759}, {"n": "в НПР любят", "subs": 1104, "er24": 23.0, "dSubs": -20, "dEr": -1.0, "dp": -1.8, "prevSubs": 1124}, {"n": "Братск любит", "subs": 3263, "er24": 15.0, "dSubs": -63, "dEr": 0.0, "dp": -1.9, "prevSubs": 3326}, {"n": "в нв не любят", "subs": 2731, "er24": 14.0, "dSubs": -12, "dEr": 2.0, "dp": -0.4, "prevSubs": 2743}, {"n": "УЗНАЙ ЗА БРАТСК", "subs": 8685, "er24": 31.0, "dSubs": 427, "dEr": 5.0, "dp": 5.2, "prevSubs": 8258}, {"n": "в подмосковье любят", "subs": 1786, "er24": 7.0, "dSubs": -51, "dEr": -2.0, "dp": -2.8, "prevSubs": 1837}, {"n": "Ищу тебя Нижневартовск", "subs": 8584, "er24": 37.0, "dSubs": 118, "dEr": 4.0, "dp": 1.4, "prevSubs": 8466}, {"n": "в сургуте любят", "subs": 2249, "er24": 15.0, "dSubs": -57, "dEr": -2.0, "dp": -2.5, "prevSubs": 2306}, {"n": "Ищу тебя Братск", "subs": 1420, "er24": 22.0, "dSubs": -9, "dEr": -3.0, "dp": -0.6, "prevSubs": 1429}, {"n": "Ищу тебя Томск", "subs": 1404, "er24": 22.0, "dSubs": 4, "dEr": 6.0, "dp": 0.3, "prevSubs": 1400}, {"n": "Ищу тебя Иркутск", "subs": 7256, "er24": 31.0, "dSubs": 179, "dEr": 1.0, "dp": 2.5, "prevSubs": 7077}, {"n": "в сафоново любят", "subs": 1943, "er24": 22.0, "dSubs": -33, "dEr": -6.0, "dp": -1.7, "prevSubs": 1976}, {"n": "в тюмени любят", "subs": 3377, "er24": 10.0, "dSubs": -75, "dEr": 2.0, "dp": -2.2, "prevSubs": 3452}, {"n": "Ищу тебя Салехард", "subs": 1361, "er24": 51.0, "dSubs": 50, "dEr": 51.0, "dp": 3.8, "prevSubs": 1311}, {"n": "В Нефтекамске любят", "subs": 2077, "er24": 20.0, "dSubs": -50, "dEr": -3.0, "dp": -2.4, "prevSubs": 2127}, {"n": "Ищу тебя Желдор", "subs": 986, "er24": 28.0, "dSubs": 40, "dEr": null, "dp": 4.2, "prevSubs": 946}, {"n": "В салехарде любят", "subs": 2604, "er24": 24.0, "dSubs": -16, "dEr": 1.0, "dp": -0.6, "prevSubs": 2620}, {"n": "Ищу тебя Междуреченск", "subs": 2943, "er24": 48.0, "dSubs": 202, "dEr": 1.0, "dp": 7.4, "prevSubs": 2741}, {"n": "в благовещенске любят", "subs": 1261, "er24": 18.0, "dSubs": 61, "dEr": -2.0, "dp": 5.1, "prevSubs": 1200}, {"n": "в мурино любят", "subs": 719, "er24": 12.0, "dSubs": -17, "dEr": null, "dp": -2.3, "prevSubs": 736}, {"n": "Узнай за Падун/Энергетик", "subs": 458, "er24": 0.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}, {"n": "Узнай за Правый", "subs": 373, "er24": 0.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}, {"n": "В России любят", "subs": 10805, "er24": 12.0, "dSubs": 5032, "dEr": -2.0, "dp": 87.2, "prevSubs": 5773}, {"n": "Ищу тебя Бугуруслан", "subs": 4697, "er24": 34.0, "dSubs": 168, "dEr": -6.0, "dp": 3.7, "prevSubs": 4529}, {"n": "Ищу тебя Соль-Илецк", "subs": 4272, "er24": 21.0, "dSubs": -200, "dEr": -4.0, "dp": -4.5, "prevSubs": 4472}, {"n": "В Нолинске любят", "subs": 1360, "er24": 24.0, "dSubs": -19, "dEr": -10.0, "dp": -1.4, "prevSubs": 1379}, {"n": "Ищу тебя Волгоград", "subs": 3896, "er24": 34.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}, {"n": "Ищу тебя в Нюрбе", "subs": 974, "er24": 32.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}]}
+];
+BUILTIN[0].channels = BUILTIN[0].channels.map(c=>({...c,name:c.n,url:'',v24:null,dSubs:null,dEr:null}));
+BUILTIN[1].channels = BUILTIN[1].channels.map(c=>({...c,name:c.n,url:'',v24:null}));
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+const KS='gm_snaps_v3',KM='gm_months_v3',KN='gm_notes_v1',KC='gm_cfg_v1';
+const ls=k=>{try{return JSON.parse(localStorage.getItem(k))||[];}catch{return[];}};
+const lso=k=>{try{return JSON.parse(localStorage.getItem(k))||{};}catch{return{};}};
+const ss=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+let snaps=ls(KS),extMonths=ls(KM),notes=lso(KN),cfg=lso(KC);
+let allMonths=[...BUILTIN,...extMonths];
+let mode='daily',activeSnap=snaps.length-1,activeMonth=allMonths.length-1;
+let tSortKey='er24',tSortDir='desc',viewMode='list';
+let _channels=[],pendingCSV=null,editingNoteId=null;
+let mc1=null,mc2=null,mc3=null;
+
+// ── LOADER ────────────────────────────────────────────────────────────────────
+setTimeout(()=>{
+  document.getElementById('loader').classList.add('out');
+  setTimeout(()=>{
+    document.getElementById('loader').style.display='none';
+    document.getElementById('app').classList.add('visible');
+  },650);
+},1800);
+
+// ── GIST SYNC ─────────────────────────────────────────────────────────────────
+function setSyncUI(state,txt){
+  document.getElementById('syncDot').className='sdot '+state;
+  document.getElementById('syncTxt').textContent=txt;
+}
+async function syncFromBin(){
+  if(!cfg.gistId) return;
+  setSyncUI('spin','Синхр…');
+  try{
+    const h={'Accept':'application/vnd.github+json'};
+    if(cfg.token) h['Authorization']='token '+cfg.token;
+    const r=await fetch(`https://api.github.com/gists/${cfg.gistId}`,{headers:h});
+    if(!r.ok) throw new Error(r.status);
+    const gist=await r.json();
+    const raw=gist.files['data.json']?.content;
+    if(raw){const d=JSON.parse(raw);if(d.snaps){snaps=d.snaps;ss(KS,snaps);if(d.notes){notes=d.notes;ss(KN,notes);}activeSnap=snaps.length-1;}}
+    setSyncUI('on',new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}));
+    renderSnapDrop(); renderDash();
+  }catch(e){setSyncUI('off','Ошибка');}
+}
+async function pushToBin(){
+  if(!cfg.gistId||!cfg.token) return;
+  try{
+    await fetch(`https://api.github.com/gists/${cfg.gistId}`,{
+      method:'PATCH',
+      headers:{'Accept':'application/vnd.github+json','Authorization':'token '+cfg.token,'Content-Type':'application/json'},
+      body:JSON.stringify({files:{'data.json':{content:JSON.stringify({snaps,notes})}}})
+    });
+  }catch(e){console.warn('push failed',e);}
+}
+async function testAndSaveSettings(){
+  const gistId=document.getElementById('binIdInp').value.trim();
+  const token=document.getElementById('masterKeyInp').value.trim();
+  const errEl=document.getElementById('settingsErr');
+  errEl.style.display='none';
+  if(!gistId){errEl.textContent='Введи Gist ID';errEl.style.display='block';return;}
+  try{
+    const h={'Accept':'application/vnd.github+json'};
+    if(token) h['Authorization']='token '+token;
+    let r,body;
+    try{r=await fetch(`https://api.github.com/gists/${gistId}`,{headers:h});body=await r.json();}
+    catch(fe){throw new Error('Сетевая ошибка: '+fe.message);}
+    if(!r.ok){
+      if(r.status===404) throw new Error('Gist не найден (404). Проверь ID из URL.');
+      if(r.status===401) throw new Error('Токен неверный (401).');
+      throw new Error('Ошибка '+(body?.message||r.status));
+    }
+    if(!body.files?.['data.json']) throw new Error('В Gist нет файла data.json.');
+    cfg={gistId,token}; ss(KC,cfg);
+    closeModal('settings'); syncFromBin();
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+}
+if(cfg.gistId){syncFromBin();setInterval(syncFromBin,60000);}
+else setSyncUI('off','Локально');
+
+// ── PARSERS ───────────────────────────────────────────────────────────────────
+function parseTrustat(text){
+  const n2i=s=>parseInt((s||'').replace(/[\s  ]+/g,''))||0;
+  const n2f=s=>parseFloat((s||'').replace(/[\s ]+/g,'').replace(',','.'))||0;
+  return text.split(/🎭/).slice(1).reduce((out,b)=>{
+    const nm=b.match(/^([^(]+)\(/);if(!nm)return out;
+    const name=nm[1].trim().replace(/[🫸🫷❤️❄️💘💞…]+/g,'').trim();
+    const urlM=b.match(/\((https?:\/\/t\.me\/[^)]+)\)/);
+    const subM=b.match(/👤\s*([\d\s  ]+)/);
+    const subs=subM?n2i(subM[1]):0;if(!subs)return out;
+    const v24M=b.match(/24[чh]:\s*([\d\s  ]+)/i);
+    const v48M=b.match(/48[чh]:\s*([\d\s  ]+)/i);
+    const v72M=b.match(/72[чh]:\s*([\d\s  ]+)/i);
+    const erM=b.match(/ER24:\s*([\d,\.]+)%/);
+    out.push({name,url:urlM?urlM[1]:'',subs,v24:v24M?n2i(v24M[1]):0,v48:v48M?n2i(v48M[1]):0,v72:v72M?n2i(v72M[1]):0,er24:erM?n2f(erM[1]):0});
+    return out;
+  },[]);
+}
+function parseCSVData(text){
+  const lines=text.trim().split(/?
+/);if(lines.length<2)return null;
+  const hdr=lines[0].split(',').map(h=>h.trim().replace(/"/g,'').toLowerCase());
+  const idx=kws=>hdr.findIndex(h=>kws.some(k=>h.includes(k)));
+  const iN=idx(['название']);if(iN<0)return null;
+  const iSt=idx(['статус']);
+  const siA=hdr.reduce((a,h,i)=>(/подписчик/i.test(h)?[...a,i]:a),[]);
+  const eiA=hdr.reduce((a,h,i)=>(/er\s*%|er24/i.test(h)?[...a,i]:a),[]);
+  if(!siA.length)return null;
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const c=lines[i].split(',').map(x=>x.trim().replace(/"/g,''));
+    if(!c[iN])continue;
+    if(iSt>=0&&!c[iSt].toLowerCase().includes('запущ'))continue;
+    const subs=parseFloat(c[siA[siA.length-1]])||0;if(!subs)continue;
+    const prevSubs=siA.length>1?(parseFloat(c[siA[siA.length-2]])||null):null;
+    const er24=eiA.length?(parseFloat(c[eiA[eiA.length-1]])||0):0;
+    const prevEr=eiA.length>1?(parseFloat(c[eiA[eiA.length-2]])||null):null;
+    const dSubs=prevSubs?Math.round(subs-prevSubs):null;
+    const dEr=prevEr!==null?parseFloat((er24-prevEr).toFixed(1)):null;
+    rows.push({n:c[iN].trim(),name:c[iN].trim(),url:'',subs:Math.round(subs),er24,v24:null,dSubs,dEr});
+  }
+  return rows.length?rows:null;
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(t){
+  document.getElementById('modal'+t[0].toUpperCase()+t.slice(1)).classList.add('open');
+  if(t==='daily'){document.getElementById('pasteArea').value='';document.getElementById('snapNoteInput').value='';document.getElementById('dailyErr').style.display='none';}
+  if(t==='monthly'){pendingCSV=null;document.getElementById('csvName').textContent='';document.getElementById('monthlyErr').style.display='none';document.getElementById('monthNameInp').value='';document.getElementById('csvFile').value='';}
+  if(t==='settings'){document.getElementById('binIdInp').value=cfg.gistId||'';document.getElementById('masterKeyInp').value=cfg.token||'';document.getElementById('settingsErr').style.display='none';}
+}
+function closeModal(t){document.getElementById('modal'+t[0].toUpperCase()+t.slice(1)).classList.remove('open');}
+function handleCSV(inp){
+  const file=inp.files[0];if(!file)return;
+  document.getElementById('csvName').textContent=file.name;
+  const r=new FileReader();
+  r.onload=e=>{pendingCSV=parseCSVData(e.target.result);if(!pendingCSV)document.getElementById('monthlyErr').style.display='block';};
+  r.readAsText(file,'UTF-8');
+}
+async function saveSnap(){
+  const ch=parseTrustat(document.getElementById('pasteArea').value.trim());
+  if(ch.length<3){document.getElementById('dailyErr').style.display='block';return;}
+  const note=document.getElementById('snapNoteInput').value.trim();
+  const snap={id:Date.now(),date:new Date().toLocaleDateString('ru',{day:'2-digit',month:'2-digit',year:'numeric'}),time:new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}),channels:ch};
+  snaps.push(snap);ss(KS,snaps);
+  if(note){notes[snap.id]=note;ss(KN,notes);}
+  activeSnap=snaps.length-1;
+  closeModal('daily');await pushToBin();renderSnapDrop();renderDash();
+}
+function saveMonth(){
+  if(!pendingCSV){document.getElementById('monthlyErr').style.display='block';return;}
+  const label=document.getElementById('monthNameInp').value.trim()||'Месяц';
+  const m={id:'m'+Date.now(),label,date:new Date().toLocaleDateString('ru',{day:'numeric',month:'long'}),channels:pendingCSV};
+  extMonths.push(m);ss(KM,extMonths);allMonths=[...BUILTIN,...extMonths];
+  activeMonth=allMonths.length-1;closeModal('monthly');renderSnapDrop();renderDash();
+}
+function openNoteModal(){
+  if(editingNoteId===null)return;
+  document.getElementById('noteText').value=notes[editingNoteId]||'';
+  openModal('note');
+}
+async function saveNote(){
+  const txt=document.getElementById('noteText').value.trim();
+  if(txt)notes[editingNoteId]=txt;else delete notes[editingNoteId];
+  ss(KN,notes);closeModal('note');await pushToBin();renderSnapDrop();renderDash();
+}
+
+// ── MODE & SNAP DROPDOWN ──────────────────────────────────────────────────────
+function setMode(m){
+  mode=m;
+  document.getElementById('modeDaily').classList.toggle('active',m==='daily');
+  document.getElementById('modeMonthly').classList.toggle('active',m==='monthly');
+  document.getElementById('addBtn').textContent=m==='daily'?'＋ Снапшот':'＋ Месяц';
+  document.getElementById('addBtn').onclick=m==='daily'?()=>openModal('daily'):()=>openModal('monthly');
+  renderSnapDrop();renderDash();
+}
+function toggleSnapDrop(){
+  document.getElementById('snapDrop').classList.toggle('open');
+}
+document.addEventListener('click',e=>{
+  if(!document.getElementById('snapSel').contains(e.target)) document.getElementById('snapDrop').classList.remove('open');
+});
+function renderSnapDrop(){
+  const drop=document.getElementById('snapDrop');
+  let items=[],label='';
+  if(mode==='daily'){
+    if(!snaps.length){drop.innerHTML='<div class="snap-opt" style="color:var(--muted)">Снапшотов нет</div>';document.getElementById('snapSelLabel').textContent='Нет снапшотов';return;}
+    items=[...snaps].reverse().map((s,ri)=>{
+      const i=snaps.length-1-ri;const note=notes[s.id];
+      return `<div class="snap-opt${i===activeSnap?' active':''}" onclick="selectSnap(${i})">
+        <div class="snap-opt-date">${s.date} · ${s.time}</div>
+        <div class="snap-opt-meta">${s.channels.length} каналов${note?`<span class="snap-note-dot"></span>${note.slice(0,28)}...`:''}</div>
+      </div>`;
+    });
+    label=snaps[activeSnap]?snaps[activeSnap].date+' · '+snaps[activeSnap].time:'Выбери снапшот';
+  } else {
+    items=allMonths.map((m,i)=>`<div class="snap-opt${i===activeMonth?' active':''}" onclick="selectMonth(${i})">
+      <div class="snap-opt-date">${m.label}</div>
+      <div class="snap-opt-meta">${m.channels.length} каналов</div>
+    </div>`);
+    label=allMonths[activeMonth]?.label||'Выбери месяц';
+  }
+  drop.innerHTML=items.join('');
+  document.getElementById('snapSelLabel').textContent=label;
+}
+function selectSnap(i){activeSnap=i;document.getElementById('snapDrop').classList.remove('open');renderSnapDrop();renderDash();}
+function selectMonth(i){activeMonth=i;document.getElementById('snapDrop').classList.remove('open');renderSnapDrop();renderDash();}
+
+// ── DASH ──────────────────────────────────────────────────────────────────────
+function renderDash(){
+  renderSnapDrop();
+  const emptyEl=document.getElementById('emptyEl'),dashEl=document.getElementById('dashEl');
+  let channels,vsText=null,hasViews=false,snapId=null;
+  if(mode==='daily'){
+    if(!snaps.length||activeSnap<0){emptyEl.style.display='flex';dashEl.style.display='none';return;}
+    const snap=snaps[activeSnap],prev=activeSnap>0?snaps[activeSnap-1]:null;
+    snapId=snap.id;
+    channels=snap.channels.map(c=>{const pc=prev?.channels.find(p=>p.name===c.name);return{...c,dSubs:pc?c.subs-pc.subs:null,dEr:pc?parseFloat((c.er24-pc.er24).toFixed(1)):null};});
+    vsText=prev?`vs ${prev.date}`:null;hasViews=true;
+  } else {
+    if(!allMonths.length||activeMonth<0){emptyEl.style.display='flex';dashEl.style.display='none';return;}
+    const month=allMonths[activeMonth],prev=activeMonth>0?allMonths[activeMonth-1]:null;
+    channels=month.channels.map(c=>{
+      const name=c.name||c.n;
+      let dSubs=c.dSubs??null,dEr=c.dEr??null;
+      if(dSubs===null&&prev){const pc=prev.channels.find(p=>(p.name||p.n)===name);if(pc){dSubs=c.subs-pc.subs;dEr=parseFloat((c.er24-pc.er24).toFixed(1));}}
+      return{name,url:c.url||'',subs:c.subs,er24:c.er24,v24:null,v48:null,v72:null,dSubs,dEr};
+    });
+    vsText=prev?`vs ${prev.label}`:null;
+  }
+  emptyEl.style.display='none';dashEl.style.display='block';
+  const vp=document.getElementById('vsPill');
+  vsText?(vp.style.display='',vp.textContent=vsText):vp.style.display='none';
+  editingNoteId=snapId;
+  const nb=document.getElementById('noteBtn');
+  if(snapId!==null){nb.style.display='';nb.textContent=notes[snapId]?'📝 Заметка ✓':'📝 Заметка';}
+  else nb.style.display='none';
+
+  // Stats bar
+  const tS=channels.reduce((s,c)=>s+c.subs,0);
+  const tV=channels.reduce((s,c)=>s+(c.v24||0),0);
+  const avgER=(channels.reduce((s,c)=>s+c.er24,0)/channels.length).toFixed(1);
+  const withD=channels.filter(c=>c.dSubs!==null);
+  const dTotal=withD.length?withD.reduce((s,c)=>s+c.dSubs,0):null;
+  const withDE=channels.filter(c=>c.dEr!==null);
+  const avgDE=withDE.length?(withDE.reduce((s,c)=>s+c.dEr,0)/withDE.length).toFixed(1):null;
+  const fN=n=>Math.abs(n)>=1000?(Math.sign(n)*(Math.abs(n)/1000)).toFixed(1)+'K':n;
+  const dH=(v,s='')=>v===null?'':`<div class="sb-delta ${v>0?'pos':v<0?'neg':'neu'}">${v>0?'+':''}${fN(v)}${s}</div>`;
+  const growing=withD.filter(c=>c.dSubs>0).length,falling=withD.filter(c=>c.dSubs<0).length;
+  document.getElementById('statsBar').innerHTML=[
+    {l:'Каналов',v:channels.length,d:'',c:'var(--red)'},
+    {l:'Подписчики',v:fN(tS),d:dH(dTotal),c:'var(--red)'},
+    ...(hasViews&&tV?[{l:'Просм. 24ч',v:fN(tV),d:'',c:'#6366f1'}]:[]),
+    {l:'Ср. ER',v:avgER+'%',d:avgDE!==null?dH(parseFloat(avgDE),'%'):'',c:'var(--amber)'},
+    {l:'Растут',v:withD.length?growing:'—',d:'',c:'var(--green)'},
+    {l:'Теряют',v:withD.length?falling:'—',d:'',c:'var(--red)'},
+  ].map(s=>`<div class="sb-item"><div class="sb-accent" style="background:${s.c}"></div><div class="sb-val">${s.v}</div><div class="sb-lbl">${s.l}</div>${s.d}</div>`).join('');
+
+  _channels=channels;
+  // Table header
+  document.getElementById('tblHead').innerHTML=`<tr>
+    <th onclick="sortBy('name')">Канал <span class="thi" id="th-name">↕</span></th>
+    <th onclick="sortBy('subs')">Подписчики <span class="thi" id="th-subs">↕</span></th>
+    ${hasViews?'<th onclick="sortBy('v24')">Просм. 24ч <span class="thi" id="th-v24">↕</span></th>':''}
+    <th onclick="sortBy('er24')">ER <span class="thi" id="th-er24">↕</span></th>
+    <th onclick="sortBy('dSubs')">Δ Подп. <span class="thi" id="th-dSubs">↕</span></th>
+    <th onclick="sortBy('dEr')">Δ ER <span class="thi" id="th-dEr">↕</span></th>
+  </tr>`;
+  renderMiniCharts();
+  filterView();
+}
+
+// ── MINI CHARTS ───────────────────────────────────────────────────────────────
+function kc(c){if(c){try{c.destroy();}catch(e){}}return null;}
+function renderMiniCharts(){
+  mc1=kc(mc1);mc2=kc(mc2);mc3=kc(mc3);
+  if(!_channels.length)return;
+  const baseOpts=(color)=>({
+    responsive:false,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{enabled:false}},
+    scales:{x:{display:false},y:{display:false}},
+    elements:{bar:{borderRadius:2},point:{radius:0}},
+    animation:{duration:400}
+  });
+  const RED='rgba(217,35,27,.7)',GRN='rgba(21,128,61,.7)',AMB='rgba(146,64,14,.65)';
+  // ER top10
+  const erRows=[..._channels].sort((a,b)=>b.er24-a.er24).slice(0,10);
+  document.getElementById('mc1val').textContent=erRows[0]?.er24+'%';
+  document.getElementById('mcER').width=document.getElementById('mcER').parentElement.offsetWidth||220;
+  document.getElementById('mcER').height=56;
+  mc1=new Chart(document.getElementById('mcER'),{type:'bar',
+    data:{labels:erRows.map((_,i)=>i),datasets:[{data:erRows.map(c=>c.er24),backgroundColor:erRows.map(c=>c.er24>=50?AMB:c.er24>=30?GRN:RED),barPercentage:.8}]},
+    options:baseOpts()
+  });
+  // Subs top10
+  const subRows=[..._channels].sort((a,b)=>b.subs-a.subs).slice(0,10);
+  const maxS=subRows[0]?.subs||1;
+  document.getElementById('mc2val').textContent=(maxS>=1000?(maxS/1000).toFixed(0)+'K':maxS)+'';
+  mc2=new Chart(document.getElementById('mcSubs'),{type:'bar',
+    data:{labels:subRows.map((_,i)=>i),datasets:[{data:subRows.map(c=>c.subs),backgroundColor:'rgba(217,35,27,.6)',barPercentage:.8}]},
+    options:baseOpts()
+  });
+  // Delta
+  const dRows=[..._channels].filter(c=>c.dSubs!==null).sort((a,b)=>b.dSubs-a.dSubs).slice(0,10);
+  const topD=dRows[0]?.dSubs||0;
+  document.getElementById('mc3val').textContent=(topD>0?'+':'')+topD;
+  if(dRows.length){
+    mc3=new Chart(document.getElementById('mcDelta'),{type:'bar',
+      data:{labels:dRows.map((_,i)=>i),datasets:[{data:dRows.map(c=>c.dSubs),backgroundColor:dRows.map(c=>c.dSubs>=0?GRN:RED),barPercentage:.8}]},
+      options:baseOpts()
+    });
+  } else {
+    document.getElementById('mc3val').textContent='—';
+  }
+}
+
+// ── TABLE / CARDS ─────────────────────────────────────────────────────────────
+function sortBy(k){tSortKey===k?(tSortDir=tSortDir==='desc'?'asc':'desc'):(tSortKey=k,tSortDir='desc');filterView();}
+function setView(v){
+  viewMode=v;
+  document.getElementById('vtList').classList.toggle('active',v==='list');
+  document.getElementById('vtCards').classList.toggle('active',v==='cards');
+  document.getElementById('listView').style.display=v==='list'?'block':'none';
+  document.getElementById('cardsView').style.display=v==='cards'?'block':'none';
+  filterView();
+}
+function filterView(){
+  if(!_channels.length)return;
+  const q=(document.getElementById('searchQ')?.value||'').toLowerCase();
+  const f=document.getElementById('fselEl')?.value||'all';
+  const maxER=Math.max(..._channels.map(c=>c.er24),1);
+  const showV=_channels.some(c=>c.v24!==null&&c.v24>0);
+  let rows=[..._channels].filter(c=>{
+    if(q&&!(c.name||'').toLowerCase().includes(q))return false;
+    if(f==='up'&&!(c.dSubs!==null&&c.dSubs>0))return false;
+    if(f==='down'&&!(c.dSubs!==null&&c.dSubs<0))return false;
+    if(f==='er30'&&c.er24<30)return false;
+    if(f==='er50'&&c.er24<50)return false;
+    return true;
+  });
+  rows.sort((a,b)=>{
+    const av=tSortKey==='name'?(a.name||''):(a[tSortKey]??-Infinity);
+    const bv=tSortKey==='name'?(b.name||''):(b[tSortKey]??-Infinity);
+    return tSortKey==='name'?(tSortDir==='desc'?bv.localeCompare(av,'ru'):av.localeCompare(bv,'ru')):(tSortDir==='desc'?bv-av:av-bv);
+  });
+  ['name','subs','v24','er24','dSubs','dEr'].forEach(k=>{
+    const el=document.getElementById('th-'+k);if(!el)return;
+    el.textContent=tSortKey===k?(tSortDir==='desc'?'↓':'↑'):'↕';
+    el.parentElement.classList.toggle('sorted',tSortKey===k);
+  });
+  document.getElementById('tcount').textContent=rows.length+' / '+_channels.length;
+  const d=(v,s='',dec=0)=>{
+    if(v===null||v===undefined)return'<span class="delta neu">—</span>';
+    const cls=v>0?'pos':v<0?'neg':'neu',sign=v>0?'+':'';
+    return`<span class="delta ${cls}">${sign}${dec?v.toFixed(dec):Math.round(v)}${s}</span>`;
+  };
+  if(viewMode==='list'){
+    document.getElementById('tbody').innerHTML=rows.map((c,i)=>{
+      const erW=Math.round((c.er24/maxER)*40);
+      const erC=c.er24>=50?'var(--amber)':c.er24>=30?'var(--green)':'var(--red)';
+      return`<tr class="row-anim" style="animation-delay:${i*0.02}s" onclick="openPanel('${(c.name||'').replace(/'/g,"\'")}')">
+        <td class="td-name"><div class="cn">${c.name||''}</div>${c.url?`<div class="cl"><a href="${c.url}" target="_blank" onclick="event.stopPropagation()">@${c.url.replace('https://t.me/','')}</a></div>`:''}</td>
+        <td>${(c.subs||0).toLocaleString('ru')}</td>
+        ${showV?`<td>${(c.v24||0).toLocaleString('ru')}</td>`:''}
+        <td><div class="erb"><div class="erbg"><div class="erf" style="width:${erW}px;background:${erC}"></div></div><span class="erv" style="color:${erC}">${c.er24}%</span></div></td>
+        <td>${d(c.dSubs)}</td>
+        <td>${d(c.dEr,'%',1)}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    const fN=n=>Math.abs(n)>=1000?(Math.sign(n)*(Math.abs(n)/1000)).toFixed(1)+'K':n;
+    document.getElementById('cardsGrid').innerHTML=rows.map((c,i)=>{
+      const erC=c.er24>=50?'var(--amber)':c.er24>=30?'var(--green)':'var(--red)';
+      const erW=Math.round((c.er24/maxER)*100);
+      return`<div class="chan-card card-anim" style="animation-delay:${i*0.03}s" onclick="openPanel('${(c.name||'').replace(/'/g,"\'")}')">
+        <div class="card-top">
+          <div>
+            <div class="card-name">${c.name||''}</div>
+            ${c.url?`<div class="card-link"><a href="${c.url}" target="_blank" onclick="event.stopPropagation()">@${c.url.replace('https://t.me/','')}</a></div>`:''}
+          </div>
+          <div class="card-er-val" style="color:${erC}">${c.er24}%</div>
+        </div>
+        <div class="card-row"><span class="cr-lbl">Подписчики</span><span class="cr-val">${(c.subs||0).toLocaleString('ru')}</span></div>
+        ${c.v24?`<div class="card-row"><span class="cr-lbl">Просм. 24ч</span><span class="cr-val">${fN(c.v24)}</span></div>`:''}
+        <div class="card-bar"><div class="card-bar-fill" style="width:${erW}%;background:${erC}"></div></div>
+        <div class="card-deltas">
+          ${c.dSubs!==null?`<span class="delta ${c.dSubs>0?'pos':c.dSubs<0?'neg':'neu'}">${c.dSubs>0?'+':''}${c.dSubs}</span>`:''}
+          ${c.dEr!==null?`<span class="delta ${c.dEr>0?'pos':c.dEr<0?'neg':'neu'}">${c.dEr>0?'+':''}${c.dEr.toFixed(1)}% ER</span>`:''}
+        </div>
+        ${(c.v24||c.v48||c.v72)?`<div class="card-views-tip">👁 24ч: ${(c.v24||0).toLocaleString('ru')} · 48ч: ${(c.v48||0).toLocaleString('ru')} · 72ч: ${(c.v72||0).toLocaleString('ru')}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+}
+
+// ── DETAIL PANEL ──────────────────────────────────────────────────────────────
+function openPanel(name){
+  const c=_channels.find(x=>x.name===name);
+  if(!c)return;
+  document.getElementById('dpName').textContent=c.name;
+  document.getElementById('dpLink').innerHTML=c.url?`<a href="${c.url}" target="_blank">@${c.url.replace('https://t.me/','')}</a>`:'';
+  const erC=c.er24>=50?'var(--amber)':c.er24>=30?'var(--green)':'var(--red)';
+  const fN=n=>n>=1000?(n/1000).toFixed(1)+'K':n;
+  const d=(v,s='',dec=0)=>{if(v===null)return'—';const sign=v>0?'+':'';return`<span class="hist-delta ${v>0?'pos':v<0?'neg':'neu'}">${sign}${dec?v.toFixed(dec):Math.round(v)}${s}</span>`;};
+  let metricsHTML=`
+    <div class="dp-sect-lbl">Текущие показатели</div>
+    <div class="dp-metrics">
+      <div class="dp-m"><div class="dp-m-val" style="color:${erC}">${c.er24}%</div><div class="dp-m-lbl">ER</div></div>
+      <div class="dp-m"><div class="dp-m-val">${(c.subs||0).toLocaleString('ru')}</div><div class="dp-m-lbl">Подписчики</div></div>
+      ${c.v24?`<div class="dp-m"><div class="dp-m-val">${fN(c.v24)}</div><div class="dp-m-lbl">Просм. 24ч</div></div>`:''}
+      ${c.v48?`<div class="dp-m"><div class="dp-m-val">${fN(c.v48)}</div><div class="dp-m-lbl">Просм. 48ч</div></div>`:''}
+      ${c.v72?`<div class="dp-m"><div class="dp-m-val">${fN(c.v72)}</div><div class="dp-m-lbl">Просм. 72ч</div></div>`:''}
+    </div>`;
+  // History across all snapshots/months
+  const source=mode==='daily'?snaps:allMonths;
+  const history=source.map((s,i)=>{
+    const ch=s.channels?.find?.(x=>(x.name||x.n)===c.name);
+    if(!ch)return null;
+    const prev=i>0?source[i-1].channels?.find?.(x=>(x.name||x.n)===c.name):null;
+    const dSubs=prev?ch.subs-(prev.subs||0):null;
+    const dEr=prev?parseFloat(((ch.er24||0)-(prev.er24||0)).toFixed(1)):null;
+    return{label:s.date||s.label,subs:ch.subs||0,er24:ch.er24||0,dSubs,dEr};
+  }).filter(Boolean).reverse();
+
+  let histHTML='';
+  if(history.length>1){
+    histHTML=`<div><div class="dp-sect-lbl">История</div><div class="history-list">${
+      history.map(h=>`<div class="hist-item">
+        <div class="hist-date">${h.label}</div>
+        <div class="hist-vals">
+          <div class="hist-v"><div class="hist-v-val">${h.er24}%</div><div class="hist-v-lbl">ER</div></div>
+          <div class="hist-v"><div class="hist-v-val">${h.subs.toLocaleString('ru')}</div><div class="hist-v-lbl">Подп.</div></div>
+          ${h.dSubs!==null?`<div class="hist-v">${d(h.dSubs)}</div>`:''}
+        </div>
+      </div>`).join('')
+    }</div></div>`;
+  }
+  document.getElementById('dpBody').innerHTML=metricsHTML+histHTML;
+  document.getElementById('panelOverlay').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+}
+function closePanel(){
+  document.getElementById('panelOverlay').classList.remove('open');
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function loadCJS(cb){
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+  s.onerror=()=>{const s2=document.createElement('script');s2.src='https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js';s2.onload=cb;document.head.appendChild(s2);};
+  s.onload=cb;document.head.appendChild(s);
+}
+loadCJS(()=>{renderSnapDrop();renderDash();});
+</script>
+</body>
+</html>
