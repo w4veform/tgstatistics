@@ -1180,16 +1180,30 @@ applyTheme(_theme);
 
 // ── AVATARS ───────────────────────────────────────────────────────────────────
 var _avatarCache={};
-function getAvatar(url,cb){
-  if(!url)return cb(null);
-  var username=url.replace(/https?:\/\/t\.me\//,'').replace(/http?:\/\/t\.me\//,'').replace(/\//,'');
-  if(!username)return cb(null);
+var _avatarColors=['#dc2626','#d97706','#16a34a','#2563eb','#7c3aed','#db2777','#0891b2','#059669'];
+function nameToColor(name){
+  var hash=0;for(var i=0;i<name.length;i++)hash=name.charCodeAt(i)+((hash<<5)-hash);
+  return _avatarColors[Math.abs(hash)%_avatarColors.length];
+}
+function makeInitialAvatar(name){
+  var initial=(name||'?')[0].toUpperCase();
+  var color=nameToColor(name||'');
+  var canvas=document.createElement('canvas');canvas.width=56;canvas.height=56;
+  var ctx=canvas.getContext('2d');
+  ctx.fillStyle=color;ctx.beginPath();ctx.arc(28,28,28,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 22px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(initial,28,29);
+  return canvas.toDataURL();
+}
+function getAvatar(name,url,cb){
+  if(!url)return cb(makeInitialAvatar(name));
+  var username=url.replace(/https?:\/\/t\.me\//,'').replace(/http:\/\/t\.me\//,'').replace(/^\//,'');
+  if(!username)return cb(makeInitialAvatar(name));
   if(_avatarCache[username]!==undefined)return cb(_avatarCache[username]);
-  // Use unavatar service - fetches Telegram avatar by username
   var src='https://unavatar.io/telegram/'+username+'?fallback=false';
   var img=new Image();
   img.onload=function(){_avatarCache[username]=src;cb(src);};
-  img.onerror=function(){_avatarCache[username]=null;cb(null);};
+  img.onerror=function(){var fb=makeInitialAvatar(name);_avatarCache[username]=fb;cb(fb);};
   img.src=src;
 }
 
@@ -1367,7 +1381,7 @@ openPanel=function(nameEnc){
   }
 
   // Load avatar
-  getAvatar(c.url,function(src){
+  getAvatar(c.name||c.n||"",c.url,function(src){
     var nameEl=document.getElementById('dpN');if(!nameEl)return;
     if(src){
       var wrap=nameEl.parentElement;
