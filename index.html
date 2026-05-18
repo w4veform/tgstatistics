@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GISMEDIA · Аналитика</title>
+<link rel="icon" href="favicon.ico"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafafa;
+  --surface:#ffffff;
+  --surface2:#f5f5f5;
+  --border:#e5e5e5;
+  --border2:#d4d4d4;
+  --text:#0a0a0a;
+  --sub:#525252;
+  --muted:#a3a3a3;
+  --red:#dc2626;
+  --red2:#b91c1c;
+  --rdbg:rgba(220,38,38,.06);
+  --rdmid:rgba(220,38,38,.14);
+  --green:#16a34a;
+  --gnbg:rgba(22,163,74,.08);
+  --amber:#d97706;
+  --ambg:rgba(217,119,6,.08);
+  --grad:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg:0 10px 15px rgba(0,0,0,.1),0 4px 6px rgba(0,0,0,.05);
+  --shadow-xl:0 20px 25px rgba(0,0,0,.1),0 10px 10px rgba(0,0,0,.04);
+  --r:10px;
+  --r-lg:16px;
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+body{
+  background:var(--bg);
+  font-family:'Inter',system-ui,sans-serif;
+  color:var(--text);
+  min-height:100vh;
+  font-size:13px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── LOADER ── */
+#loader{position:fixed;inset:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease,visibility .5s}
+#loader.out{opacity:0;visibility:hidden}
+.ld-inner{display:flex;flex-direction:column;align-items:center;gap:18px}
+.ld-frags{position:relative;width:112px;height:112px}
+.frag{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center;opacity:0}
+.f0{clip-path:polygon(0 0,50% 0,50% 50%,0 50%);animation:fly0 .6s .05s cubic-bezier(.34,1.3,.64,1) forwards}
+.f1{clip-path:polygon(50% 0,100% 0,100% 50%,50% 50%);animation:fly1 .6s .1s cubic-bezier(.34,1.3,.64,1) forwards}
+.f2{clip-path:polygon(0 50%,50% 50%,50% 100%,0 100%);animation:fly2 .6s .15s cubic-bezier(.34,1.3,.64,1) forwards}
+.f3{clip-path:polygon(50% 50%,100% 50%,100% 100%,50% 100%);animation:fly3 .6s .2s cubic-bezier(.34,1.3,.64,1) forwards}
+@keyframes fly0{0%{opacity:0;transform:translate(-48px,-48px) scale(.25)}100%{opacity:1;transform:none}}
+@keyframes fly1{0%{opacity:0;transform:translate(48px,-48px) scale(.25)}100%{opacity:1;transform:none}}
+@keyframes fly2{0%{opacity:0;transform:translate(-48px,48px) scale(.25)}100%{opacity:1;transform:none}}
+@keyframes fly3{0%{opacity:0;transform:translate(48px,48px) scale(.25)}100%{opacity:1;transform:none}}
+.ld-name{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;opacity:0;animation:fadeUp .4s .75s ease both}
+.ld-bar{width:112px;height:1.5px;background:var(--border);border-radius:2px;overflow:hidden;opacity:0;animation:fadeUp .3s .8s ease both}
+.ld-fill{height:100%;width:0;background:var(--red);border-radius:2px;animation:fillBar .85s .85s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes fillBar{to{width:100%}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+#loginScreen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(220,38,38,.06) 0%,transparent 100%);pointer-events:none}
+.login-card{
+  position:relative;
+  width:380px;max-width:92vw;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:40px 36px 36px;
+  box-shadow:var(--shadow-xl);
+  display:flex;flex-direction:column;align-items:center;
+  animation:cardIn .5s cubic-bezier(.34,1.15,.64,1) both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
+.login-icon{
+  width:64px;height:64px;border-radius:16px;
+  background:var(--grad);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:20px;
+  box-shadow:0 8px 20px rgba(220,38,38,.25),0 0 0 1px rgba(220,38,38,.1);
+}
+.login-icon img{width:40px;height:40px;object-fit:contain;filter:brightness(0) invert(1)}
+.login-h{font-size:20px;font-weight:800;letter-spacing:-.4px;color:var(--text);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:24px;text-align:center;line-height:1.5}
+.login-stats{display:flex;width:100%;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:28px;background:var(--surface)}
+.lst{flex:1;padding:10px 4px;text-align:center;border-right:1px solid var(--border)}
+.lst:last-child{border-right:none}
+.lst-v{font-size:16px;font-weight:900;color:var(--red);letter-spacing:-.3px;line-height:1.2}
+.lst-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;font-weight:600}
+.login-inp-group{width:100%;position:relative;margin-bottom:10px}
+.login-inp-group svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.login-inp{
+  width:100%;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:10px;
+  padding:11px 14px 11px 40px;
+  font-size:13px;
+  color:var(--text);
+  outline:none;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+  font-family:'Inter',sans-serif;
+  font-weight:500;
+}
+.login-inp:focus{border-color:var(--red);background:var(--surface);box-shadow:0 0 0 3px rgba(220,38,38,.08)}
+.login-btn{
+  width:100%;
+  border:none;
+  border-radius:10px;
+  padding:12px 20px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  background:var(--grad);
+  color:#fff;
+  letter-spacing:.01em;
+  transition:transform .15s,box-shadow .15s,filter .15s;
+  box-shadow:0 4px 12px rgba(220,38,38,.28),0 1px 3px rgba(220,38,38,.2);
+  font-family:'Inter',sans-serif;
+  margin-bottom:0;
+}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(220,38,38,.35),0 2px 6px rgba(220,38,38,.2);filter:brightness(1.05)}
+.login-btn:active{transform:translateY(0);filter:brightness(.97)}
+.login-err{
+  color:var(--red);font-size:12px;font-weight:600;
+  text-align:center;margin-top:10px;display:none;
+  animation:shake .3s ease;
+}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}60%{transform:translateX(4px)}}
+.login-footer{margin-top:20px;font-size:11px;color:var(--muted);text-align:center;letter-spacing:.01em}
+
+/* ── APP ── */
+#app{display:flex;flex-direction:column;min-height:100vh;opacity:0;transition:opacity .4s}
+#app.visible{opacity:1}
+
+/* ── TOPNAV ── */
+.topnav{
+  background:rgba(255,255,255,.85);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;
+  height:52px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:50;
+}
+.nav-logo img{height:26px;width:auto;object-fit:contain;flex-shrink:0}
+.nav-div{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.mode-sw{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px;flex-shrink:0}
+.msb{background:none;border:none;border-radius:6px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap;font-family:'Inter',sans-serif}
+.msb.active{background:var(--surface);color:var(--red);box-shadow:var(--shadow-sm)}
+.snap-sel{position:relative;flex-shrink:0}
+.snap-sel-btn{
+  display:flex;align-items:center;gap:5px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:600;cursor:pointer;color:var(--text);
+  white-space:nowrap;max-width:200px;
+  transition:all .15s;font-family:'Inter',sans-serif;
+}
+.snap-sel-btn:hover{border-color:var(--border2)}
+.snap-sel-btn .arr{color:var(--muted);font-size:9px;flex-shrink:0;transition:transform .15s}
+.snap-sel-btn.open .arr{transform:rotate(180deg)}
+.snap-drop{
+  display:none;position:fixed;top:56px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;box-shadow:var(--shadow-lg);
+  min-width:220px;z-index:100;padding:4px;
+  max-height:300px;overflow-y:auto;
+}
+.snap-drop.open{display:block;animation:dropIn .15s ease}
+@keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.sopt{padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .1s;font-size:12px}
+.sopt:hover{background:var(--surface2)}
+.sopt.active{background:var(--rdbg);color:var(--red)}
+.muted-opt{color:var(--muted);text-align:center;padding:12px}
+.sopt-date{font-weight:700;font-size:12px}
+.sopt-meta{color:var(--muted);font-size:11px;margin-top:1px}
+.vs-pill{
+  font-size:11px;color:var(--sub);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;padding:3px 10px;white-space:nowrap;flex-shrink:0;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.nav-actions{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.nav-btn{
+  background:none;border:1px solid var(--border);
+  border-radius:8px;padding:5px 11px;
+  font-size:12px;cursor:pointer;color:var(--sub);
+  transition:all .15s;white-space:nowrap;font-family:'Inter',sans-serif;font-weight:500;
+}
+.nav-btn:hover{border-color:var(--border2);color:var(--text)}
+.nav-btn.primary{
+  background:var(--grad);color:#fff;border-color:transparent;
+  font-weight:700;box-shadow:0 2px 8px rgba(220,38,38,.2);
+}
+.nav-btn.primary:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 4px 12px rgba(220,38,38,.28)}
+.nav-btn.primary:active{transform:translateY(0)}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.sdot.on{background:var(--green)}.sdot.off{background:var(--muted)}.sdot.spin{background:var(--amber);animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.sync-pill{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);padding:4px 9px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;transition:all .15s}
+.sync-pill:hover{border-color:var(--border2)}
+
+/* ── CONTENT ── */
+.content{flex:1;padding:20px 20px 48px;max-width:1200px;width:100%;margin:0 auto}
+
+/* ── STAT CARDS ── */
+.stats-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.stat-card{
+  flex:1;min-width:120px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:14px 16px;
+  box-shadow:var(--shadow-sm);
+  position:relative;
+  overflow:hidden;
+  transition:box-shadow .2s,transform .2s;
+  animation:statIn .4s calc(var(--i,0)*.06s) both;
+}
+@keyframes statIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.stat-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.stat-accent{position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0}
+.stat-val{font-size:22px;font-weight:900;letter-spacing:-.6px;line-height:1;margin-top:2px}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.stat-delta{font-size:11px;font-weight:700;margin-top:5px}
+.stat-delta.pos{color:var(--green)}.stat-delta.neg{color:var(--red)}.stat-delta.neu{color:var(--muted)}
+
+/* ── MINI CHARTS ── */
+.mini-charts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--shadow-sm);transition:box-shadow .2s}
+.mc:hover{box-shadow:var(--shadow)}
+.mc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.mc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.mc-val{font-size:14px;font-weight:900;letter-spacing:-.3px;color:var(--text)}
+.mc-bars{display:flex;align-items:flex-end;gap:3px;height:52px}
+.mc-bar{
+  flex:1;border-radius:3px 3px 0 0;min-height:3px;cursor:pointer;
+  position:relative;transition:opacity .15s,transform .15s;
+  animation:barUp .3s ease both;
+}
+@keyframes barUp{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+.mc-bar{transform-origin:bottom}
+.mc-bar:hover{opacity:.75;transform:scaleY(1.04)}
+.mc-bar:hover .mc-tip{display:flex}
+.mc-tip{
+  display:none;
+  position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);
+  background:#0a0a0a;color:#fff;
+  border-radius:8px;padding:6px 10px;
+  font-size:11px;white-space:nowrap;z-index:50;pointer-events:none;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+  flex-direction:column;gap:1px;
+  font-family:'Inter',sans-serif;
+}
+.mc-tip strong{font-size:11px;font-weight:700;color:#fff}
+.mc-tip span{font-size:10px;color:rgba(255,255,255,.6)}
+.mc-bar:first-child .mc-tip{left:0;transform:none}
+.mc-bar:last-child .mc-tip{left:auto;right:0;transform:none}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.search-wrap{position:relative}
+.search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);width:13px;height:13px;pointer-events:none}
+.search{
+  width:220px;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px 7px 32px;
+  font-size:13px;color:var(--text);outline:none;
+  transition:border-color .15s,box-shadow .15s;
+  font-family:'Inter',sans-serif;font-weight:500;
+}
+.search:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.07)}
+.fsel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:7px 10px;
+  font-size:12px;color:var(--text);outline:none;cursor:pointer;
+  font-family:'Inter',sans-serif;font-weight:500;
+  transition:border-color .15s;
+}
+.fsel:hover{border-color:var(--border2)}
+.tcount{font-size:11px;color:var(--muted);font-weight:500}
+.tb-right{margin-left:auto;display:flex;gap:6px}
+.view-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px;gap:2px}
+.vt{background:none;border:none;border-radius:6px;padding:4px 9px;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s;line-height:1.2}
+.vt.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}
+
+/* ── TABLE ── */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:auto;max-height:calc(100vh - 300px);box-shadow:var(--shadow-sm)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  position:sticky;top:0;z-index:10;
+  background:var(--surface);
+  padding:9px 14px;text-align:left;
+  font-size:10px;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);cursor:pointer;user-select:none;
+  border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700;
+}
+thead th:hover{color:var(--text)}
+.thi{margin-left:2px;opacity:.3;font-size:9px}
+th.sorted .thi{opacity:1;color:var(--red)}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+td{padding:10px 14px;white-space:nowrap}
+.tdn{white-space:normal;max-width:200px}
+.cn{font-weight:600;font-size:13px}
+.cl a{font-size:10px;color:var(--muted);text-decoration:none;transition:color .1s}
+.cl a:hover{color:var(--red)}
+.dt{font-weight:700;font-size:12px}
+.dt.pos{color:var(--green)}.dt.neg{color:var(--red)}.dt.neu{color:var(--muted)}
+.erb{display:flex;align-items:center;gap:7px}
+.erbg{width:38px;height:3px;border-radius:2px;background:var(--surface2);flex-shrink:0;overflow:hidden}
+.erf{height:100%;border-radius:2px}
+.erv{font-weight:700;font-size:12px}
+
+/* ── CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.chan-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px;cursor:pointer;
+  transition:all .2s cubic-bezier(.34,1.2,.64,1);
+  position:relative;overflow:visible;
+  animation:cardIn .3s calc(var(--i,0)*.03s) both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.chan-card::after{content:'';position:absolute;inset:-1px;border-radius:calc(var(--r) + 1px);border:2px solid transparent;transition:border-color .15s;pointer-events:none}
+.chan-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.chan-card:hover::after{border-color:var(--border2)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px}
+.card-name{font-weight:700;font-size:13px;line-height:1.3;flex:1}
+.card-link a{font-size:10px;color:var(--muted);text-decoration:none;transition:color .1s}
+.card-link a:hover{color:var(--red)}
+.card-er{font-size:20px;font-weight:900;flex-shrink:0;letter-spacing:-.5px}
+.card-row{display:flex;justify-content:space-between;font-size:12px;margin-top:5px}
+.crl{color:var(--muted);font-weight:500}.crv{font-weight:700}
+.card-progress{height:2px;background:var(--surface2);border-radius:2px;margin-top:10px;overflow:hidden}
+.card-progress-fill{height:100%;border-radius:2px;transition:width .4s ease}
+.card-deltas{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.card-tip{
+  display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:#0a0a0a;color:#fff;border-radius:8px;
+  padding:6px 10px;font-size:11px;white-space:nowrap;z-index:20;
+  pointer-events:none;box-shadow:var(--shadow-lg);
+}
+.card-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#0a0a0a}
+.chan-card:hover .card-tip{display:block}
+
+/* ── DETAIL PANEL ── */
+.panel-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.15);z-index:200;backdrop-filter:blur(2px)}
+.panel-ov.open{display:block}
+.dp{position:fixed;right:0;top:0;bottom:0;width:360px;background:var(--surface);border-left:1px solid var(--border);z-index:201;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.08)}
+.dp.open{transform:translateX(0)}
+.dp-head{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+.dp-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px;border-radius:6px;flex-shrink:0;transition:all .1s}
+.dp-close:hover{color:var(--text);background:var(--surface2)}
+.dp-name{font-size:15px;font-weight:800;flex:1;line-height:1.3;letter-spacing:-.2px}
+.dp-link a{font-size:11px;color:var(--muted);text-decoration:none}
+.dp-link a:hover{color:var(--red)}
+.dp-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
+.dp-sl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px}
+.dp-ms{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dp-m{background:var(--surface2);border-radius:8px;padding:10px 12px}
+.dp-mv{font-size:16px;font-weight:900;letter-spacing:-.3px;line-height:1}
+.dp-ml{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.hist-item{background:var(--surface2);border-radius:8px;padding:9px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.hist-date{font-size:11px;font-weight:600;color:var(--sub)}
+.hist-vs{display:flex;gap:12px}
+.hist-v{text-align:right}
+.hist-vv{font-size:12px;font-weight:700}
+.hist-vl{font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:1px}
+.hdelta{font-size:11px;font-weight:700}
+.hdelta.pos{color:var(--green)}.hdelta.neg{color:var(--red)}.hdelta.neu{color:var(--muted)}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;width:520px;max-width:95vw;box-shadow:var(--shadow-xl);display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;animation:cardIn .2s ease}
+.modal h2{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.mnote{font-size:12px;color:var(--sub);line-height:1.55;background:var(--surface2);border-radius:8px;padding:10px 12px}
+.il{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+textarea,.inp{
+  background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;
+  padding:9px 12px;color:var(--text);font-size:13px;outline:none;width:100%;
+  transition:border-color .15s,box-shadow .15s;font-family:'Inter',sans-serif;
+}
+textarea:focus,.inp:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.07);background:var(--surface)}
+textarea{font-size:12px;resize:vertical;min-height:130px}
+.mbtns{display:flex;gap:8px}
+.bc{background:var(--surface2);border:1px solid var(--border);color:var(--sub);border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;flex:1;font-family:'Inter',sans-serif;font-weight:500;transition:all .15s}
+.bc:hover{background:var(--bg)}
+.bp{background:var(--grad);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;flex:2;transition:all .15s;box-shadow:0 2px 8px rgba(220,38,38,.2);font-family:'Inter',sans-serif}
+.bp:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.perr{color:var(--red);font-size:12px;display:none;font-weight:600}
+.csv-drop{border:2px dashed var(--border2);border-radius:8px;padding:14px;text-align:center;cursor:pointer;position:relative;transition:all .15s}
+.csv-drop:hover{border-color:var(--red);background:var(--rdbg)}
+.csv-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.csv-dn{font-size:12px;font-weight:600;color:var(--red);margin-top:4px}
+
+/* ── EMPTY ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:12px;text-align:center}
+.empty-icon{font-size:36px;opacity:.2}
+.empty-title{font-size:16px;font-weight:800;color:var(--muted);letter-spacing:-.2px}
+.empty-sub{font-size:13px;color:var(--muted);max-width:250px;line-height:1.6}
+
+@media(max-width:768px){
+  .topnav{padding:0 14px;gap:8px}
+  .content{padding:14px}
+  .mini-charts{grid-template-columns:1fr}
+  .cards-grid{grid-template-columns:1fr 1fr}
+  .dp{width:100%}
+  .stats-bar{gap:8px}
+  .stat-card{min-width:100px}
+}
+@media(max-width:500px){.cards-grid{grid-template-columns:1fr}.search{width:160px}}
+
+/* ── DARK THEME ── */
+[data-theme="dark"]{
+  --bg:#0a0a0a;--surface:#111111;--surface2:#1a1a1a;
+  --border:#262626;--border2:#333333;
+  --text:#fafafa;--sub:#a3a3a3;--muted:#525252;
+  --rdbg:rgba(220,38,38,.1);--rdmid:rgba(220,38,38,.2);
+  --gnbg:rgba(22,163,74,.1);--ambg:rgba(217,119,6,.1);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow:0 1px 3px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 4px 6px rgba(0,0,0,.4);
+  --shadow-lg:0 10px 15px rgba(0,0,0,.5);
+}
+[data-theme="dark"] .topnav{background:rgba(17,17,17,.85)}
+[data-theme="dark"] .tbl-wrap{background:var(--surface)}
+[data-theme="dark"] tbody tr:hover{background:var(--surface2)}
+[data-theme="dark"] .search,[data-theme="dark"] .fsel,[data-theme="dark"] .inp,
+[data-theme="dark"] textarea,[data-theme="dark"] .login-inp{
+  background:var(--surface2);color:var(--text);border-color:var(--border);
+}
+[data-theme="dark"] .snap-sel-btn,[data-theme="dark"] .mode-sw,
+[data-theme="dark"] .view-toggle,[data-theme="dark"] .sync-pill{background:var(--surface2)}
+[data-theme="dark"] .sopt:hover{background:var(--surface2)}
+[data-theme="dark"] .nav-btn{color:var(--sub);border-color:var(--border)}
+[data-theme="dark"] .msb.active{background:var(--surface);color:var(--red)}
+[data-theme="dark"] .vt.active{background:var(--surface)}
+[data-theme="dark"] .dp,[data-theme="dark"] .modal{background:var(--surface)}
+[data-theme="dark"] .dp-m,[data-theme="dark"] .hist-item{background:var(--surface2)}
+[data-theme="dark"] .bc{background:var(--surface2);color:var(--sub)}
+[data-theme="dark"] #loginScreen{background:var(--bg)}
+[data-theme="dark"] .login-card{background:var(--surface);border-color:var(--border)}
+[data-theme="dark"] .login-inp{background:var(--surface2)}
+[data-theme="dark"] .login-stats{background:var(--surface2)}
+[data-theme="dark"] .lst{border-color:var(--border)}
+
+/* ── SPARKLINE ── */
+.sparkline{display:inline-flex;align-items:flex-end;gap:1px;height:20px;vertical-align:middle;margin-left:4px}
+.spark-bar{width:3px;border-radius:1px;min-height:2px;flex-shrink:0}
+
+/* ── BADGES ── */
+.chan-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;
+  padding:2px 6px;border-radius:20px;letter-spacing:.02em;white-space:nowrap}
+.badge-growth{background:rgba(22,163,74,.1);color:#15803d}
+.badge-er{background:rgba(220,38,38,.08);color:#dc2626}
+.badge-new{background:rgba(99,102,241,.1);color:#6366f1}
+.badge-drop{background:rgba(217,119,6,.1);color:#d97706}
+.badge-alert{background:rgba(239,68,68,.12);color:#ef4444}
+
+/* ── ALERT ROW ── */
+tr.alert-row td:first-child::before{content:'⚠';margin-right:4px;font-size:11px}
+tr.alert-row{background:rgba(239,68,68,.03)!important}
+tr.alert-row:hover{background:rgba(239,68,68,.07)!important}
+
+/* ── AVATAR ── */
+.chan-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--surface2);border:1px solid var(--border)}
+.chan-avatar-wrap{display:flex;align-items:center;gap:10px}
+
+/* ── CSV EXPORT BTN ── */
+.export-btn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--sub)}
+
+/* ── GROWTH CHART in panel ── */
+.dp-chart{height:100px!important;width:100%!important;display:block;margin-top:4px}
+
+/* ── POST FEED ── */
+.feed-frame{width:100%;height:420px;border:none;border-radius:10px;background:var(--surface2)}
+.feed-loading{display:flex;align-items:center;justify-content:center;height:100px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="ld-inner">
+    <div class="ld-frags" id="ldFrags"></div>
+    <div class="ld-name">GISMEDIA</div>
+    <div class="ld-bar"><div class="ld-fill"></div></div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen" style="display:none">
+  <div class="login-card">
+    <div class="login-icon"><img id="loginLogo" src="" alt=""/></div>
+    <div class="login-h">GISMEDIA</div>
+    <div class="login-sub">Аналитика Telegram-сети.<br/>Введите пароль для входа.</div>
+    <div class="login-stats">
+      <div class="lst"><div class="lst-v" id="lbsChannels">—</div><div class="lst-l">Каналов</div></div>
+      <div class="lst"><div class="lst-v" id="lbsSubs">—</div><div class="lst-l">Подписчиков</div></div>
+      <div class="lst"><div class="lst-v" id="lbsER">—</div><div class="lst-l">Ср. ER</div></div>
+    </div>
+    <div class="login-inp-group">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <input class="login-inp" type="password" id="loginPwdInp" placeholder="Введите пароль…" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Войти</button>
+    <div class="login-err" id="loginErr">Неверный пароль. Попробуйте снова.</div>
+    <div class="login-footer">Доступ только для команды GISMEDIA</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav class="topnav">
+    <div class="nav-logo"><img id="navLogo" src="" alt=""/></div>
+    <div class="nav-div"></div>
+    <div class="mode-sw">
+      <button class="msb active" id="modeDaily" onclick="setMode('daily')">Ежедневно</button>
+      <button class="msb" id="modeMonthly" onclick="setMode('monthly')">Ежемесячно</button>
+    </div>
+    <div class="snap-sel" id="snapSel">
+      <button class="snap-sel-btn" id="snapBtn" onclick="toggleDrop()">
+        <span id="snapLbl">—</span><span class="arr">▾</span>
+      </button>
+      <div class="snap-drop" id="snapDrop"></div>
+    </div>
+    <span class="vs-pill" id="vsPill" style="display:none"></span>
+    <div class="nav-actions">
+      <div class="sync-pill" onclick="openModal('settings')">
+        <div class="sdot off" id="syncDot"></div>
+        <span id="syncTxt">Локально</span>
+      </div>
+      <button class="nav-btn" id="themeBtn" onclick="toggleTheme()" title="Тема">🌙</button><button class="nav-btn" id="noteBtn" style="display:none" onclick="openNoteModal()">📝</button>
+      <button class="nav-btn primary" id="addBtn" onclick="openModal('daily')">+ Снапшот</button>
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="empty" id="emptyEl">
+      <div class="empty-icon">📡</div>
+      <div class="empty-title">Нет данных</div>
+      <div class="empty-sub">Добавь первый снапшот или переключись на ежемесячный режим.</div>
+    </div>
+    <div id="dashEl" style="display:none">
+      <div class="stats-bar" id="statsBar"></div>
+      <div class="mini-charts">
+        <div class="mc"><div class="mc-head"><span class="mc-title">ER топ-12</span><span class="mc-val" id="mc1v"></span></div><div class="mc-bars" id="mcER"></div></div>
+        <div class="mc"><div class="mc-head"><span class="mc-title">Подписчики топ-12</span><span class="mc-val" id="mc2v"></span></div><div class="mc-bars" id="mcSubs"></div></div>
+        <div class="mc"><div class="mc-head"><span class="mc-title">Δ Прирост</span><span class="mc-val" id="mc3v"></span></div><div class="mc-bars" id="mcDelta"></div></div>
+      </div>
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="search" type="text" id="searchQ" placeholder="Поиск канала…" oninput="fv()"/>
+        </div>
+        <select class="fsel" id="fselEl" onchange="fv()">
+          <option value="all">Все каналы</option>
+          <option value="up">Растут ▲</option>
+          <option value="down">Теряют ▼</option>
+          <option value="er30">ER ≥ 30%</option>
+          <option value="er50">ER ≥ 50%</option>
+        </select>
+        <span class="tcount" id="tcount"></span>
+        <button class="nav-btn export-btn" onclick="exportCSV()">↓ CSV</button><div class="tb-right">
+          <div class="view-toggle">
+            <button class="vt active" id="vtL" onclick="setView('list')" title="Список">☰</button>
+            <button class="vt" id="vtC" onclick="setView('cards')" title="Карточки">⊞</button>
+          </div>
+        </div>
+      </div>
+      <div id="listView"><div class="tbl-wrap"><table><thead id="tblHead"></thead><tbody id="tbody"></tbody></table></div></div>
+      <div id="cardsView" style="display:none"><div class="cards-grid" id="cGrid"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="panel-ov" id="pOv" onclick="closePanel()"></div>
+<div class="dp" id="dp">
+  <div class="dp-head">
+    <div style="flex:1"><div class="dp-name" id="dpN"></div><div class="dp-link" id="dpL"></div></div>
+    <button class="dp-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="dp-body" id="dpB"></div>
+</div>
+
+<!-- MODAL: Snap -->
+<div class="overlay" id="modalDaily" onclick="if(event.target===this)closeModal('daily')">
+  <div class="modal"><h2>Новый снапшот</h2>
+    <div class="mnote">Скопируй весь текст из TrustStat и вставь сюда.</div>
+    <textarea id="pasteArea" placeholder="🎭 Название (http://t.me/...) 👤 1 234&#10;👁️ 24ч: 456 | 48ч: 567 | 72ч: 678&#10;📈 ER24: 37,00%"></textarea>
+    <div><div class="il">Заметка (опционально)</div><input class="inp" type="text" id="snapNote" placeholder="Запустили рекламу, сезонный спад…"/></div>
+    <div class="perr" id="dErr">Не удалось распознать. Убедись что вставил текст из TrustStat.</div>
+    <div class="mbtns"><button class="bc" onclick="closeModal('daily')">Отмена</button><button class="bp" onclick="saveSnap()">Сохранить</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Month -->
+<div class="overlay" id="modalMonthly" onclick="if(event.target===this)closeModal('monthly')">
+  <div class="modal"><h2>Добавить месяц</h2>
+    <div class="mnote">CSV из Notion: Название канала, Подписчики (мес1), Подписчики (мес2), ER % (мес1), ER % (мес2), Статус.</div>
+    <div><div class="il">Название месяца</div><input class="inp" type="text" id="mNameInp" placeholder="Июнь 2025"/></div>
+    <div><div class="il">CSV файл</div>
+      <div class="csv-drop"><input type="file" accept=".csv" id="csvFile" onchange="handleCSV(this)"/>
+        <div>📂 Нажми или перетащи CSV</div><div class="csv-dn" id="csvN"></div>
+      </div>
+    </div>
+    <div class="perr" id="mErr">Не удалось прочитать CSV.</div>
+    <div class="mbtns"><button class="bc" onclick="closeModal('monthly')">Отмена</button><button class="bp" onclick="saveMonth()">Добавить</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Note -->
+<div class="overlay" id="modalNote" onclick="if(event.target===this)closeModal('note')">
+  <div class="modal" style="width:360px"><h2>Заметка к снапшоту</h2>
+    <textarea id="noteText" style="min-height:80px" placeholder="Контекст: запустили рекламу, упал алгоритм…"></textarea>
+    <div class="mbtns"><button class="bc" onclick="closeModal('note')">Отмена</button><button class="bp" onclick="saveNote()">Сохранить</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Settings -->
+<div class="overlay" id="modalSettings" onclick="if(event.target===this)closeModal('settings')">
+  <div class="modal"><h2>GitHub Gist · Синхронизация</h2>
+    <div class="mnote" style="font-size:11px">
+      1. <a href="https://gist.github.com" target="_blank" style="color:var(--red)">gist.github.com</a> → Create public gist → filename: <b>data.json</b> → content: {"snaps":[],"notes":{}}<br/>
+      2. GitHub → Settings → Developer settings → Tokens (classic) → галочка <b>gist</b><br/>
+      3. Вставь ниже и нажми «Сохранить»
+    </div>
+    <div><div class="il">Gist ID</div><input class="inp" type="text" id="binIdInp" placeholder="ID из URL гиста"/></div>
+    <div><div class="il">GitHub Token</div><input class="inp" type="password" id="masterKeyInp" placeholder="ghp_xxxxxxxxxxxx"/></div>
+    <div class="mbtns">
+      <button class="bc" onclick="closeModal('settings')">Отмена</button>
+      <button class="bp" onclick="saveSettings()">Сохранить</button>
+    </div>
+    <div style="text-align:center;margin-top:4px">
+      <button style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:Inter,sans-serif" onclick="closeModal('settings');logout()">Выйти</button>
+    </div>
+  </div>
+</div>
+<script>
+var L120="data:image/png;base64,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";
+var L44="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAsCAYAAAAehFoBAAAFlklEQVR42u2WbYhUVRjH/885d3ZnxllbF1crTPNDUSG+pKmzo3t319VNMPHLVaIIghLxS4UEfQimoaKiRPCbvUqW2d5IejEo0G1Fy8qoSCuMwHx33ffZ2ZnZe87z9GFm1t1tczMSguYP98Plcs753eft/IGyyiqrrLLKKqus/6gkmVQCqP8+KKAE0Fe5jMTztLiuU9yDBKBrH1HvMuhZd81tnfXNt5cA/nKd543+OaVwzVilFJkRqT/ddPfc9LJlO4N4POhdWvcaAJQiN07JFMhEqLehuSUTT7yciy/9IRNfcuj35uYbx/6s809BWz1Pe/BBPix83wLAmRUrFtTkcpt1pvuBCiUVgIaEnC/HC5cAilIpBhF6m5o2hBOJLZVs7gIIYAMojUh6cD6Ac/A8VTrjqoHF8zR8n6m4wQnvwdrpnafXhLLp+5z+vsaQoxWEASNDUHACwa8ABA0NjPb24awQwB1NLcurcumnw4MDLoQBywwBg4SsFTLRaAcA+COr5So7nsj3LYHk4srViUw88crMU8eOT86lX4+AV4QgCsZYEQGYNSIRhRuun/7pi29OuvDbQGQ4soB01i99rmaw72DYGhdBYNkIi5BikAIcbZS62HHTvJ8BwPN9vipg8aAplWIikh7XXZdbuuTAtHTPoSiChyqZaxEEFoZtgQdaAIZSyLP5fSBnZ8/+7P1EkD/F4roOXFcBgGNDgxoCMA8JlCZAAQwFYWiSrOPsn//W1ox4nqbCvhMDl0YL+bAdTU3Ls/F4e/VQbm8luBE2EBhrAYgAWiBaREhEoEgAR+uMsc92V89+Z6gy9MtM389Se7tBQwMDQPrmmW8YoSEAFVICIgAQBQHZiuiu8ZjUlWYpAfKUCPUtq3tuSiZ9MMxBPYyxsNaKgABoEaERa0CAtY7Od1WGH6k5fOTVRbu2nzpzy4yBS83Na3vrlm+iVIoB4MfFiy8Z4gslSkAgIIZWlBU5/mN93YFSCU4InCzAcpu3ObYlnvhksjVPOMxcjKgGoEGAiIxdytBaZxm9Uz8/uJ2oMPvv+u77nVNN9gMgWFPK3OlwmEXEgAqHEQFKRKA05aOxbY2plIHr6gkjLAA9BeDoxmR00alvP66CaYGRQISUFCJaAB0DSwRWpJAnOTkQooc37jga6mlyH8osW/xFdZC9JxPk3z4ZT2woZa65ra3GgZpWKAYiQDGUowYNn/x5wbzdAhDa2+2EwL7nKSLiW47t3xkjcdnYIREJ/ekeJRr5CAQMrdRAuOpQvnr6T1t3bXo3ls+8ohidPbpiVezw0fvnb92aKTXdlJ7+RSFCFMKmeHEwNFEuHH6+btu2LFx3VLMNnzt2xpLv2w7Xvbc2n9sNYwJAQizKEkELWBRgh4lBChAGUSF1zNY4jtIEymh6tXvG9OSsPR+eK/VEqcwJxOlE3d4YB+vYAgyCA2AQcnzf6tV3eqmUASDjAY+OsO9zW1ubMyk3mAQsAhIdkIJylBZhVgBBhxw4jgMiLQKCUjov0p8XzkIrzeBsbyS2turQVw/P2vPhOQF0cTQxPE8RwJ31dStjYtblRN7rqIo0nq+duiTn6O6cjjyzPpUagufReLCjgFuL827OMy8s0MCM/pB6LD2tal5/bfUdfdp5SVVUqLymrr5K/WRXOPRoRuvDRmv0h8OPn7j+ulsvTp4yJ6MrD/bHqu+tOXDgI1m4MFS80ezYTheRaLejnogc+ca7YX/75zP37fu6Kxp9smvR3L0YZzJc0TFdbGhpOd/YvH7s90v19U+fWbWqrvTuieizLS3LR02XZGsFALROZC2JLttQz9PieTop8s98844dO0IAQVzXkWRSFa/kYQBxXWek8yo6NSq5tb/rYf9VYy9/4a5GHiIAtY7xsdfccJdVVllllVVWWWX93/QHkN+4Fk+EBIEAAAAASUVORK5CYII=";
+var APR_DATA=[{"n": "Ищу тебя Горловка", "subs": 1874, "er24": 39.0}, {"n": "Ищу тебя Сафоново", "subs": 534, "er24": 62.0}, {"n": "Ищу тебя Краснодар", "subs": 3657, "er24": 12.0}, {"n": "Ищу тебя Новокузнецк", "subs": 5627, "er24": 34.0}, {"n": "Ищу тебя Питер", "subs": 7079, "er24": 6.0}, {"n": "в барнауле любят", "subs": 3726, "er24": 16.0}, {"n": "Ищу тебя Искитим", "subs": 818, "er24": 32.0}, {"n": "Ищу тебя вельск", "subs": 1720, "er24": 42.0}, {"n": "в Подольске любят", "subs": 4089, "er24": 13.0}, {"n": "В Марий Эл любят", "subs": 4063, "er24": 11.0}, {"n": "в калике любят", "subs": 3093, "er24": 15.0}, {"n": "Ищу тебя Нефтекамск", "subs": 1354, "er24": 49.0}, {"n": "в жел-доре любят", "subs": 2051, "er24": 16.0}, {"n": "Ищу тебя Киров", "subs": 6338, "er24": 30.0}, {"n": "в Кузнецке любят", "subs": 1575, "er24": 13.0}, {"n": "в Коврове любят", "subs": 3216, "er24": 18.0}, {"n": "В ГУРЬЕВСКЕ ЛЮБЯТ", "subs": 1595, "er24": 30.0}, {"n": "в воронеже любят", "subs": 4366, "er24": 5.0}, {"n": "В Ленинск-Кузнецком любят", "subs": 1215, "er24": 43.0}, {"n": "Ищу тебя Ковров", "subs": 1551, "er24": 39.0}, {"n": "В Красноярске любят", "subs": 2611, "er24": 11.0}, {"n": "шип шип бурятии", "subs": 15900, "er24": 22.0}, {"n": "в орехово любят", "subs": 2885, "er24": 12.0}, {"n": "в красноярском крае любят", "subs": 1098, "er24": 12.0}, {"n": "в Волгодонске любят", "subs": 2578, "er24": 10.0}, {"n": "в чувашии любят", "subs": 2489, "er24": 15.0}, {"n": "В Краснодаре любят", "subs": 4029, "er24": 7.0}, {"n": "Ищу тебя Тюмень", "subs": 2835, "er24": 31.0}, {"n": "в междуреченске любят", "subs": 3205, "er24": 29.0}, {"n": "в Искитиме любят", "subs": 3067, "er24": 36.0}, {"n": "Ищу тебя Подольск", "subs": 2040, "er24": 35.0}, {"n": "Ищу тебя Сургут", "subs": 1206, "er24": 34.0}, {"n": "В Псковской области любят", "subs": 2558, "er24": 15.0}, {"n": "в Бурятии любят", "subs": 8798, "er24": 6.0}, {"n": "в нв любят", "subs": 3557, "er24": 14.0}, {"n": "Ищу тебя Улан-Удэ", "subs": 3555, "er24": 15.0}, {"n": "Ищу тебя Псков", "subs": 1488, "er24": 21.0}, {"n": "Ищу тебя Красноярск", "subs": 2782, "er24": 21.0}, {"n": "В Кодинске любят", "subs": 719, "er24": 47.0}, {"n": "В Кирове любят", "subs": 5759, "er24": 9.0}, {"n": "в НПР любят", "subs": 1124, "er24": 24.0}, {"n": "Братск любит", "subs": 3326, "er24": 15.0}, {"n": "в нв не любят", "subs": 2743, "er24": 12.0}, {"n": "УЗНАЙ ЗА БРАТСК", "subs": 8258, "er24": 26.0}, {"n": "в подмосковье любят", "subs": 1837, "er24": 9.0}, {"n": "Ищу тебя Нижневартовск", "subs": 8466, "er24": 33.0}, {"n": "в сургуте любят", "subs": 2306, "er24": 17.0}, {"n": "Ищу тебя Братск", "subs": 1429, "er24": 25.0}, {"n": "Ищу тебя Томск", "subs": 1400, "er24": 16.0}, {"n": "Ищу тебя Иркутск", "subs": 7077, "er24": 30.0}, {"n": "в сафоново любят", "subs": 1976, "er24": 28.0}, {"n": "в тюмени любят", "subs": 3452, "er24": 8.0}, {"n": "Ищу тебя Салехард", "subs": 1311, "er24": 0.0}, {"n": "В Нефтекамске любят", "subs": 2127, "er24": 23.0}, {"n": "Ищу тебя Желдор", "subs": 946, "er24": 0}, {"n": "В салехарде любят", "subs": 2620, "er24": 23.0}, {"n": "Ищу тебя Междуреченск", "subs": 2741, "er24": 47.0}, {"n": "в благовещенске любят", "subs": 1200, "er24": 20.0}, {"n": "в мурино любят", "subs": 736, "er24": 0}, {"n": "В России любят", "subs": 5773, "er24": 14.0}, {"n": "Ищу тебя Бугуруслан", "subs": 4529, "er24": 40.0}, {"n": "Ищу тебя Соль-Илецк", "subs": 4472, "er24": 25.0}, {"n": "В Нолинске любят", "subs": 1379, "er24": 34.0}];
+var MAY_DATA=[{"n": "Ищу тебя Горловка", "subs": 1839, "er24": 28.0, "dSubs": -35, "dEr": -11.0, "dp": -1.9, "prevSubs": 1874}, {"n": "Ищу тебя Сафоново", "subs": 583, "er24": 50.0, "dSubs": 49, "dEr": -12.0, "dp": 9.2, "prevSubs": 534}, {"n": "Ищу тебя Краснодар", "subs": 3568, "er24": 13.0, "dSubs": -89, "dEr": 1.0, "dp": -2.4, "prevSubs": 3657}, {"n": "Ищу тебя Барнаул", "subs": 446, "er24": 0.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}, {"n": "Ищу тебя Новокузнецк", "subs": 5939, "er24": 36.0, "dSubs": 312, "dEr": 2.0, "dp": 5.5, "prevSubs": 5627}, {"n": "Ищу тебя Питер", "subs": 6900, "er24": 6.0, "dSubs": -179, "dEr": 0.0, "dp": -2.5, "prevSubs": 7079}, {"n": "в барнауле любят", "subs": 3730, "er24": 15.0, "dSubs": 4, "dEr": -1.0, "dp": 0.1, "prevSubs": 3726}, {"n": "Ищу тебя Искитим", "subs": 1040, "er24": 59.0, "dSubs": 222, "dEr": 27.0, "dp": 27.1, "prevSubs": 818}, {"n": "Ищу тебя вельск", "subs": 1647, "er24": 25.0, "dSubs": -73, "dEr": -17.0, "dp": -4.2, "prevSubs": 1720}, {"n": "в Подольске любят", "subs": 3994, "er24": 12.0, "dSubs": -95, "dEr": -1.0, "dp": -2.3, "prevSubs": 4089}, {"n": "В Марий Эл любят", "subs": 3958, "er24": 9.0, "dSubs": -105, "dEr": -2.0, "dp": -2.6, "prevSubs": 4063}, {"n": "в калике любят", "subs": 3019, "er24": 11.0, "dSubs": -74, "dEr": -4.0, "dp": -2.4, "prevSubs": 3093}, {"n": "Ищу тебя Нефтекамск", "subs": 1492, "er24": 42.0, "dSubs": 138, "dEr": -7.0, "dp": 10.2, "prevSubs": 1354}, {"n": "в жел-доре любят", "subs": 2043, "er24": 15.0, "dSubs": -8, "dEr": -1.0, "dp": -0.4, "prevSubs": 2051}, {"n": "Ищу тебя Киров", "subs": 6815, "er24": 25.0, "dSubs": 477, "dEr": -5.0, "dp": 7.5, "prevSubs": 6338}, {"n": "в Кузнецке любят", "subs": 1531, "er24": 11.0, "dSubs": -44, "dEr": -2.0, "dp": -2.8, "prevSubs": 1575}, {"n": "в Коврове любят", "subs": 3126, "er24": 18.0, "dSubs": -90, "dEr": 0.0, "dp": -2.8, "prevSubs": 3216}, {"n": "В ГУРЬЕВСКЕ ЛЮБЯТ", "subs": 1547, "er24": 26.0, "dSubs": -48, "dEr": -4.0, "dp": -3.0, "prevSubs": 1595}, {"n": "в воронеже любят", "subs": 4270, "er24": 3.0, "dSubs": -96, "dEr": -2.0, "dp": -2.2, "prevSubs": 4366}, {"n": "В Ленинск-Кузнецком любят", "subs": 1235, "er24": 34.0, "dSubs": 20, "dEr": -9.0, "dp": 1.6, "prevSubs": 1215}, {"n": "Ищу тебя Ковров", "subs": 1569, "er24": 35.0, "dSubs": 18, "dEr": -4.0, "dp": 1.2, "prevSubs": 1551}, {"n": "В Красноярске любят", "subs": 2525, "er24": 9.0, "dSubs": -86, "dEr": -2.0, "dp": -3.3, "prevSubs": 2611}, {"n": "шип шип бурятии", "subs": 15985, "er24": 20.0, "dSubs": 85, "dEr": -2.0, "dp": 0.5, "prevSubs": 15900}, {"n": "в орехово любят", "subs": 2856, "er24": 15.0, "dSubs": -29, "dEr": 3.0, "dp": -1.0, "prevSubs": 2885}, {"n": "в красноярском крае любят", "subs": 1069, "er24": 8.0, "dSubs": -29, "dEr": -4.0, "dp": -2.6, "prevSubs": 1098}, {"n": "в Волгодонске любят", "subs": 2501, "er24": 6.0, "dSubs": -77, "dEr": -4.0, "dp": -3.0, "prevSubs": 2578}, {"n": "в чувашии любят", "subs": 2421, "er24": 23.0, "dSubs": -68, "dEr": 8.0, "dp": -2.7, "prevSubs": 2489}, {"n": "В Краснодаре любят", "subs": 3886, "er24": 4.0, "dSubs": -143, "dEr": -3.0, "dp": -3.5, "prevSubs": 4029}, {"n": "Ищу тебя Тюмень", "subs": 2909, "er24": 31.0, "dSubs": 74, "dEr": 0.0, "dp": 2.6, "prevSubs": 2835}, {"n": "в междуреченске любят", "subs": 3144, "er24": 26.0, "dSubs": -61, "dEr": -3.0, "dp": -1.9, "prevSubs": 3205}, {"n": "в Искитиме любят", "subs": 2987, "er24": 37.0, "dSubs": -80, "dEr": 1.0, "dp": -2.6, "prevSubs": 3067}, {"n": "Ищу тебя Подольск", "subs": 2043, "er24": 29.0, "dSubs": 3, "dEr": -6.0, "dp": 0.1, "prevSubs": 2040}, {"n": "Ищу тебя Сургут", "subs": 1232, "er24": 43.0, "dSubs": 26, "dEr": 9.0, "dp": 2.2, "prevSubs": 1206}, {"n": "В Псковской области любят", "subs": 2508, "er24": 9.0, "dSubs": -50, "dEr": -6.0, "dp": -2.0, "prevSubs": 2558}, {"n": "в Бурятии любят", "subs": 8497, "er24": 6.0, "dSubs": -301, "dEr": 0.0, "dp": -3.4, "prevSubs": 8798}, {"n": "в нв любят", "subs": 3295, "er24": 13.0, "dSubs": -262, "dEr": -1.0, "dp": -7.4, "prevSubs": 3557}, {"n": "Ищу тебя Улан-Удэ", "subs": 3510, "er24": 13.0, "dSubs": -45, "dEr": -2.0, "dp": -1.3, "prevSubs": 3555}, {"n": "Ищу тебя Псков", "subs": 1521, "er24": 17.0, "dSubs": 33, "dEr": -4.0, "dp": 2.2, "prevSubs": 1488}, {"n": "Ищу тебя Красноярск", "subs": 2747, "er24": 19.0, "dSubs": -35, "dEr": -2.0, "dp": -1.3, "prevSubs": 2782}, {"n": "В Кодинске любят", "subs": 714, "er24": 28.0, "dSubs": -5, "dEr": -19.0, "dp": -0.7, "prevSubs": 719}, {"n": "В Кирове любят", "subs": 5669, "er24": 6.0, "dSubs": -90, "dEr": -3.0, "dp": -1.6, "prevSubs": 5759}, {"n": "в НПР любят", "subs": 1104, "er24": 23.0, "dSubs": -20, "dEr": -1.0, "dp": -1.8, "prevSubs": 1124}, {"n": "Братск любит", "subs": 3263, "er24": 15.0, "dSubs": -63, "dEr": 0.0, "dp": -1.9, "prevSubs": 3326}, {"n": "в нв не любят", "subs": 2731, "er24": 14.0, "dSubs": -12, "dEr": 2.0, "dp": -0.4, "prevSubs": 2743}, {"n": "УЗНАЙ ЗА БРАТСК", "subs": 8685, "er24": 31.0, "dSubs": 427, "dEr": 5.0, "dp": 5.2, "prevSubs": 8258}, {"n": "в подмосковье любят", "subs": 1786, "er24": 7.0, "dSubs": -51, "dEr": -2.0, "dp": -2.8, "prevSubs": 1837}, {"n": "Ищу тебя Нижневартовск", "subs": 8584, "er24": 37.0, "dSubs": 118, "dEr": 4.0, "dp": 1.4, "prevSubs": 8466}, {"n": "в сургуте любят", "subs": 2249, "er24": 15.0, "dSubs": -57, "dEr": -2.0, "dp": -2.5, "prevSubs": 2306}, {"n": "Ищу тебя Братск", "subs": 1420, "er24": 22.0, "dSubs": -9, "dEr": -3.0, "dp": -0.6, "prevSubs": 1429}, {"n": "Ищу тебя Томск", "subs": 1404, "er24": 22.0, "dSubs": 4, "dEr": 6.0, "dp": 0.3, "prevSubs": 1400}, {"n": "Ищу тебя Иркутск", "subs": 7256, "er24": 31.0, "dSubs": 179, "dEr": 1.0, "dp": 2.5, "prevSubs": 7077}, {"n": "в сафоново любят", "subs": 1943, "er24": 22.0, "dSubs": -33, "dEr": -6.0, "dp": -1.7, "prevSubs": 1976}, {"n": "в тюмени любят", "subs": 3377, "er24": 10.0, "dSubs": -75, "dEr": 2.0, "dp": -2.2, "prevSubs": 3452}, {"n": "Ищу тебя Салехард", "subs": 1361, "er24": 51.0, "dSubs": 50, "dEr": 51.0, "dp": 3.8, "prevSubs": 1311}, {"n": "В Нефтекамске любят", "subs": 2077, "er24": 20.0, "dSubs": -50, "dEr": -3.0, "dp": -2.4, "prevSubs": 2127}, {"n": "Ищу тебя Желдор", "subs": 986, "er24": 28.0, "dSubs": 40, "dEr": null, "dp": 4.2, "prevSubs": 946}, {"n": "В салехарде любят", "subs": 2604, "er24": 24.0, "dSubs": -16, "dEr": 1.0, "dp": -0.6, "prevSubs": 2620}, {"n": "Ищу тебя Междуреченск", "subs": 2943, "er24": 48.0, "dSubs": 202, "dEr": 1.0, "dp": 7.4, "prevSubs": 2741}, {"n": "в благовещенске любят", "subs": 1261, "er24": 18.0, "dSubs": 61, "dEr": -2.0, "dp": 5.1, "prevSubs": 1200}, {"n": "в мурино любят", "subs": 719, "er24": 12.0, "dSubs": -17, "dEr": null, "dp": -2.3, "prevSubs": 736}, {"n": "Узнай за Падун/Энергетик", "subs": 458, "er24": 0.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}, {"n": "Узнай за Правый", "subs": 373, "er24": 0.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}, {"n": "В России любят", "subs": 10805, "er24": 12.0, "dSubs": 5032, "dEr": -2.0, "dp": 87.2, "prevSubs": 5773}, {"n": "Ищу тебя Бугуруслан", "subs": 4697, "er24": 34.0, "dSubs": 168, "dEr": -6.0, "dp": 3.7, "prevSubs": 4529}, {"n": "Ищу тебя Соль-Илецк", "subs": 4272, "er24": 21.0, "dSubs": -200, "dEr": -4.0, "dp": -4.5, "prevSubs": 4472}, {"n": "В Нолинске любят", "subs": 1360, "er24": 24.0, "dSubs": -19, "dEr": -10.0, "dp": -1.4, "prevSubs": 1379}, {"n": "Ищу тебя Волгоград", "subs": 3896, "er24": 34.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}, {"n": "Ищу тебя в Нюрбе", "subs": 974, "er24": 32.0, "dSubs": null, "dEr": null, "dp": null, "prevSubs": null}];
+// ── LOGO ──────────────────────────────────────────────────────────────────────
+document.getElementById('navLogo').src = L44;
+(function(){
+  var w = document.getElementById('ldFrags');
+  ['f0','f1','f2','f3'].forEach(function(c){
+    var d = document.createElement('div');
+    d.className = 'frag ' + c;
+    d.style.backgroundImage = 'url(' + L120 + ')';
+    w.appendChild(d);
+  });
+})();
+document.getElementById('loginLogo').src = L44;
+
+// ── BUILT-IN DATA ─────────────────────────────────────────────────────────────
+var BUILTIN = [
+  {id:'apr25',label:'Апрель 2025',date:'7 апреля',channels:APR_DATA},
+  {id:'may25',label:'Май 2025',date:'7 мая',channels:MAY_DATA}
+];
+BUILTIN[0].channels = BUILTIN[0].channels.map(function(c){return {name:c.n,url:'',subs:c.subs,er24:c.er24,v24:null,v48:null,v72:null,dSubs:null,dEr:null};});
+BUILTIN[1].channels = BUILTIN[1].channels.map(function(c){return {name:c.n,url:'',subs:c.subs,er24:c.er24,v24:null,v48:null,v72:null,dSubs:c.dSubs||null,dEr:c.dEr||null};});
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+var KS='gm_snaps_v3',KM='gm_months_v3',KN='gm_notes_v1',KC='gm_cfg_v1';
+function ls(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
+function lso(k){try{return JSON.parse(localStorage.getItem(k))||{};}catch(e){return {};}}
+function ss(k,v){localStorage.setItem(k,JSON.stringify(v));}
+var snaps=ls(KS),extMonths=ls(KM),notes=lso(KN),cfg=lso(KC);
+var allMonths=BUILTIN.concat(extMonths);
+var mode='daily',activeSnap=snaps.length-1,activeMonth=allMonths.length-1;
+var tSK='er24',tSD='desc',viewMode='list';
+var _ch=[],pendingCSV=null,editNoteId=null;
+var mc1=null,mc2=null,mc3=null;
+
+// ── GIST SYNC ─────────────────────────────────────────────────────────────────
+function setSyncUI(st,tx){
+  document.getElementById('syncDot').className='sdot '+st;
+  document.getElementById('syncTxt').textContent=tx;
+}
+async function syncFromBin(){
+  if(!cfg.gistId)return;
+  setSyncUI('spin','Синхр…');
+  try{
+    var h={'Accept':'application/vnd.github+json'};
+    if(cfg.token)h['Authorization']='token '+cfg.token;
+    var r=await fetch('https://api.github.com/gists/'+cfg.gistId,{headers:h});
+    if(!r.ok)throw new Error(r.status);
+    var g=await r.json();
+    var raw=g.files&&g.files['data.json']&&g.files['data.json'].content;
+    if(raw){
+      var d=JSON.parse(raw);
+      if(d.snaps){snaps=d.snaps;ss(KS,snaps);activeSnap=snaps.length-1;}
+      if(d.notes){notes=d.notes;ss(KN,notes);}
+    }
+    setSyncUI('on',new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}));
+    renderDrop();renderDash();
+  }catch(e){setSyncUI('off','Ошибка');}
+}
+async function pushToBin(){
+  if(!cfg.gistId||!cfg.token)return;
+  try{
+    await fetch('https://api.github.com/gists/'+cfg.gistId,{
+      method:'PATCH',
+      headers:{'Accept':'application/vnd.github+json','Authorization':'token '+cfg.token,'Content-Type':'application/json'},
+      body:JSON.stringify({files:{'data.json':{content:JSON.stringify({snaps:snaps,notes:notes})}}})
+    });
+  }catch(e){console.warn(e);}
+}
+async function saveSettings(){
+  var gistId=document.getElementById('binIdInp').value.trim();
+  var token=document.getElementById('masterKeyInp').value.trim();
+  if(gistId)cfg.gistId=gistId;
+  if(token)cfg.token=token;
+  ss(KC,cfg);
+  closeModal('settings');
+  if(cfg.gistId&&cfg.token)syncFromBin();
+}
+if(cfg.gistId){syncFromBin();setInterval(syncFromBin,60000);}
+else setSyncUI('off','Локально');
+
+// ── PASSWORD AUTH ─────────────────────────────────────────────────────────────
+var PASS='qweqwe12345';
+var KAuth='gm_auth_pass';
+function initAuth(){
+  var saved=localStorage.getItem(KAuth);
+  if(saved===PASS){showApp();return;}
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('loader').style.display='none';
+  // Fill stats
+  try{
+    var latest=BUILTIN[BUILTIN.length-1].channels;
+    var tS=latest.reduce(function(s,c){return s+c.subs;},0);
+    var avgER=(latest.reduce(function(s,c){return s+c.er24;},0)/latest.length).toFixed(1);
+    animNum('lbsChannels',latest.length);
+    animNum('lbsSubs',Math.round(tS/1000),true);
+    document.getElementById('lbsER').textContent=avgER+'%';
+  }catch(e){}
+}
+function doLogin(){
+  var p=document.getElementById('loginPwdInp').value;
+  if(p===PASS){
+    localStorage.setItem(KAuth,PASS);
+    document.getElementById('loginScreen').style.display='none';
+    showApp();
+  }else{
+    var err=document.getElementById('loginErr');
+    err.style.display='block';
+    document.getElementById('loginPwdInp').value='';
+    document.getElementById('loginPwdInp').focus();
+    setTimeout(function(){err.style.display='none';},2500);
+  }
+}
+function logout(){
+  localStorage.removeItem(KAuth);
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginPwdInp').value='';
+}
+function showApp(){
+  document.getElementById('loginScreen').style.display='none';
+  var app=document.getElementById('app');
+  app.style.display='flex';
+  setTimeout(function(){app.classList.add('visible');},10);
+  renderDrop();renderDash();
+}
+
+// ── ANIMATED NUMBERS ──────────────────────────────────────────────────────────
+function animNum(id,target,isK){
+  var el=document.getElementById(id);if(!el)return;
+  var start=0,dur=800,s=Date.now();
+  function step(){
+    var p=Math.min(1,(Date.now()-s)/dur);
+    var ease=1-Math.pow(1-p,3);
+    var val=Math.round(start+(target-start)*ease);
+    el.textContent=isK?val+'K':val;
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ── PARSERS ───────────────────────────────────────────────────────────────────
+function parseTrustat(text){
+  var blocks=text.split('🎭').slice(1),out=[];
+  for(var i=0;i<blocks.length;i++){
+    var b=blocks[i];
+    var nm=b.match(/^([^(]+)\(/);if(!nm)continue;
+    var name=nm[1].trim().replace(/[\u{1F3AD}\u{1FAF8}\u{1FAF7}\u2764\uFE0F\u{1F9CA}\u{1F498}\u{1F49E}\u2026]+/gu,'').trim();
+    var urlM=b.match(/\((https?:\/\/t\.me\/[^)]+)\)/);
+    var subM=b.match(/\uD83D\uDC64\s*([\d\s\xA0\u202F]+)/);
+    if(!subM)subM=b.match(/👤\s*([\d\s\xA0\u202F]+)/);
+    var subs=subM?parseInt(subM[1].replace(/[\s\xA0\u202F]+/g,''))||0:0;
+    if(!subs)continue;
+    function ni(s){return parseInt((s||'').replace(/[\s\xA0\u202F]+/g,''))||0;}
+    function nf(s){return parseFloat((s||'').replace(/[\s\xA0]+/g,'').replace(',','.'))||0;}
+    var v24M=b.match(/24[чh]:\s*([\d\s\xA0\u202F]+)/i);
+    var v48M=b.match(/48[чh]:\s*([\d\s\xA0\u202F]+)/i);
+    var v72M=b.match(/72[чh]:\s*([\d\s\xA0\u202F]+)/i);
+    var erM=b.match(/ER24:\s*([\d,.]+)%/);
+    out.push({name:name,url:urlM?urlM[1]:'',subs:subs,v24:v24M?ni(v24M[1]):0,v48:v48M?ni(v48M[1]):0,v72:v72M?ni(v72M[1]):0,er24:erM?nf(erM[1]):0});
+  }
+  return out;
+}
+function parseCSVData(text){
+  var lines=text.trim().split(/\r?\n/);if(lines.length<2)return null;
+  var hdr=lines[0].split(',').map(function(h){return h.trim().replace(/"/g,'').toLowerCase();});
+  function idx(kws){return hdr.findIndex(function(h){return kws.some(function(k){return h.indexOf(k)>=0;});});}
+  var iN=idx(['название']);if(iN<0)return null;
+  var iSt=idx(['статус']);
+  var siA=hdr.reduce(function(a,h,i){return /подписчик/i.test(h)?a.concat(i):a;},[]);
+  var eiA=hdr.reduce(function(a,h,i){return /er\s*%|er24/i.test(h)?a.concat(i):a;},[]);
+  if(!siA.length)return null;
+  var rows=[];
+  for(var i=1;i<lines.length;i++){
+    var c=lines[i].split(',').map(function(x){return x.trim().replace(/"/g,'');});
+    if(!c[iN])continue;
+    if(iSt>=0&&c[iSt].toLowerCase().indexOf('запущ')<0)continue;
+    var subs=parseFloat(c[siA[siA.length-1]])||0;if(!subs)continue;
+    var prevSubs=siA.length>1?(parseFloat(c[siA[siA.length-2]])||null):null;
+    var er24=eiA.length?(parseFloat(c[eiA[eiA.length-1]])||0):0;
+    var prevEr=eiA.length>1?(parseFloat(c[eiA[eiA.length-2]])||null):null;
+    var dSubs=prevSubs?Math.round(subs-prevSubs):null;
+    var dEr=prevEr!==null?parseFloat((er24-prevEr).toFixed(1)):null;
+    rows.push({n:c[iN].trim(),name:c[iN].trim(),url:'',subs:Math.round(subs),er24:er24,v24:null,v48:null,v72:null,dSubs:dSubs,dEr:dEr});
+  }
+  return rows.length?rows:null;
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(t){
+  document.getElementById('modal'+t[0].toUpperCase()+t.slice(1)).classList.add('open');
+  if(t==='daily'){document.getElementById('pasteArea').value='';document.getElementById('snapNote').value='';document.getElementById('dErr').style.display='none';}
+  if(t==='monthly'){pendingCSV=null;document.getElementById('csvN').textContent='';document.getElementById('mErr').style.display='none';document.getElementById('mNameInp').value='';document.getElementById('csvFile').value='';}
+  if(t==='settings'){document.getElementById('binIdInp').value=cfg.gistId||'';document.getElementById('masterKeyInp').value=cfg.token||'';}
+}
+function closeModal(t){document.getElementById('modal'+t[0].toUpperCase()+t.slice(1)).classList.remove('open');}
+function handleCSV(inp){var file=inp.files[0];if(!file)return;document.getElementById('csvN').textContent=file.name;var r=new FileReader();r.onload=function(e){pendingCSV=parseCSVData(e.target.result);if(!pendingCSV)document.getElementById('mErr').style.display='block';};r.readAsText(file,'UTF-8');}
+async function saveSnap(){
+  var ch=parseTrustat(document.getElementById('pasteArea').value.trim());
+  if(ch.length<3){document.getElementById('dErr').style.display='block';return;}
+  var note=document.getElementById('snapNote').value.trim();
+  var snap={id:Date.now(),date:new Date().toLocaleDateString('ru',{day:'2-digit',month:'2-digit',year:'numeric'}),time:new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}),channels:ch};
+  snaps.push(snap);ss(KS,snaps);
+  if(note){notes[snap.id]=note;ss(KN,notes);}
+  activeSnap=snaps.length-1;
+  closeModal('daily');await pushToBin();renderDrop();renderDash();
+}
+function saveMonth(){
+  if(!pendingCSV){document.getElementById('mErr').style.display='block';return;}
+  var label=document.getElementById('mNameInp').value.trim()||'Месяц';
+  var m={id:'m'+Date.now(),label:label,date:new Date().toLocaleDateString('ru',{day:'numeric',month:'long'}),channels:pendingCSV};
+  extMonths.push(m);ss(KM,extMonths);allMonths=BUILTIN.concat(extMonths);
+  activeMonth=allMonths.length-1;closeModal('monthly');renderDrop();renderDash();
+}
+function openNoteModal(){if(editNoteId===null)return;document.getElementById('noteText').value=notes[editNoteId]||'';openModal('note');}
+async function saveNote(){
+  var txt=document.getElementById('noteText').value.trim();
+  if(txt)notes[editNoteId]=txt;else delete notes[editNoteId];
+  ss(KN,notes);closeModal('note');await pushToBin();renderDrop();renderDash();
+}
+
+// ── MODE & DROPDOWN ───────────────────────────────────────────────────────────
+function setMode(m){
+  mode=m;
+  document.getElementById('modeDaily').classList.toggle('active',m==='daily');
+  document.getElementById('modeMonthly').classList.toggle('active',m==='monthly');
+  document.getElementById('addBtn').textContent=m==='daily'?'+ Снапшот':'+ Месяц';
+  document.getElementById('addBtn').onclick=m==='daily'?function(){openModal('daily');}:function(){openModal('monthly');};
+  renderDrop();renderDash();
+}
+function toggleDrop(){document.getElementById('snapDrop').classList.toggle('open');}
+document.addEventListener('click',function(e){if(!document.getElementById('snapSel').contains(e.target))document.getElementById('snapDrop').classList.remove('open');});
+function renderDrop(){
+  var drop=document.getElementById('snapDrop'),label='—';
+  var items=[];
+  if(mode==='daily'){
+    if(!snaps.length){drop.innerHTML='<div class="sopt muted-opt">Снапшотов нет</div>';document.getElementById('snapLbl').textContent='Нет снапшотов';return;}
+    items=[].concat(snaps).reverse().map(function(s,ri){
+      var i=snaps.length-1-ri;var note=notes[s.id];
+      return '<div class="sopt'+(i===activeSnap?' active':'')+'" onclick="selSnap('+i+')">'
+        +'<div class="sopt-date">'+s.date+' · '+s.time+'</div>'
+        +'<div class="sopt-meta">'+s.channels.length+' каналов'+(note?' · <span style="color:var(--amber)">📝</span> '+note.slice(0,20):'')+'</div>'
+        +'</div>';
+    });
+    label=snaps[activeSnap]?snaps[activeSnap].date+' · '+snaps[activeSnap].time:'—';
+  }else{
+    items=allMonths.map(function(m,i){
+      return '<div class="sopt'+(i===activeMonth?' active':'')+'" onclick="selMonth('+i+')">'
+        +'<div class="sopt-date">'+m.label+'</div>'
+        +'<div class="sopt-meta">'+m.channels.length+' каналов</div>'
+        +'</div>';
+    });
+    label=allMonths[activeMonth]?allMonths[activeMonth].label:'—';
+  }
+  drop.innerHTML=items.join('');
+  document.getElementById('snapLbl').textContent=label;
+}
+function selSnap(i){activeSnap=i;document.getElementById('snapDrop').classList.remove('open');renderDrop();renderDash();}
+function selMonth(i){activeMonth=i;document.getElementById('snapDrop').classList.remove('open');renderDrop();renderDash();}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fN(n){if(n===null||n===undefined)return'—';return Math.abs(n)>=1000?(Math.sign(n)*(Math.abs(n)/1000)).toFixed(1)+'K':String(n);}
+function dStr(v,s,dec){
+  s=s||'';dec=dec||0;
+  if(v===null||v===undefined)return '<span class="dt neu">—</span>';
+  var cls=v>0?'pos':v<0?'neg':'neu';
+  return '<span class="dt '+cls+'">'+(v>0?'+':'')+(dec?parseFloat(v).toFixed(dec):Math.round(v))+s+'</span>';
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDash(){
+  renderDrop();
+  var emptyEl=document.getElementById('emptyEl'),dashEl=document.getElementById('dashEl');
+  var channels,vsText=null,hasViews=false,snapId=null;
+  if(mode==='daily'){
+    if(!snaps.length||activeSnap<0){emptyEl.style.display='flex';dashEl.style.display='none';return;}
+    var snap=snaps[activeSnap],prev=activeSnap>0?snaps[activeSnap-1]:null;
+    snapId=snap.id;
+    channels=snap.channels.map(function(c){
+      var pc=prev&&prev.channels.find(function(p){return p.name===c.name;});
+      return Object.assign({},c,{dSubs:pc?c.subs-pc.subs:null,dEr:pc?parseFloat((c.er24-pc.er24).toFixed(1)):null});
+    });
+    vsText=prev?'vs '+prev.date:null;hasViews=true;
+  }else{
+    if(!allMonths.length||activeMonth<0){emptyEl.style.display='flex';dashEl.style.display='none';return;}
+    var month=allMonths[activeMonth],prev=activeMonth>0?allMonths[activeMonth-1]:null;
+    channels=month.channels.map(function(c){
+      var name=c.name||c.n;
+      var dSubs=c.dSubs!=null?c.dSubs:null;var dEr=c.dEr!=null?c.dEr:null;
+      if(dSubs===null&&prev){var pc=prev.channels.find(function(p){return (p.name||p.n)===name;});if(pc){dSubs=c.subs-pc.subs;dEr=parseFloat((c.er24-pc.er24).toFixed(1));}}
+      return {name:name,url:c.url||'',subs:c.subs,er24:c.er24,v24:null,v48:null,v72:null,dSubs:dSubs,dEr:dEr};
+    });
+    vsText=prev?'vs '+prev.label:null;
+  }
+  emptyEl.style.display='none';dashEl.style.display='block';
+  var vp=document.getElementById('vsPill');
+  vsText?(vp.style.display='inline-flex',vp.textContent=vsText):vp.style.display='none';
+  editNoteId=snapId;
+  var nb=document.getElementById('noteBtn');
+  if(snapId!==null){nb.style.display='';nb.textContent=notes[snapId]?'📝 ✓':'📝';}
+  else nb.style.display='none';
+
+  var tS=channels.reduce(function(s,c){return s+c.subs;},0);
+  var tV=channels.reduce(function(s,c){return s+(c.v24||0);},0);
+  var avgER=(channels.reduce(function(s,c){return s+c.er24;},0)/channels.length).toFixed(1);
+  var withD=channels.filter(function(c){return c.dSubs!==null;});
+  var dTotal=withD.length?withD.reduce(function(s,c){return s+c.dSubs;},0):null;
+  var withDE=channels.filter(function(c){return c.dEr!==null;});
+  var avgDE=withDE.length?(withDE.reduce(function(s,c){return s+c.dEr;},0)/withDE.length).toFixed(1):null;
+  var growing=withD.filter(function(c){return c.dSubs>0;}).length;
+  var falling=withD.filter(function(c){return c.dSubs<0;}).length;
+
+  function dH(v,sfx){sfx=sfx||'';if(v===null)return '';return '<p class="stat-delta '+(v>0?'pos':v<0?'neg':'neu')+'">'+(v>0?'+':'')+fN(v)+sfx+'</p>';}
+  var statsArr=[
+    {l:'Каналов',v:channels.length,d:'',c:'var(--red)'},
+    {l:'Подписчики',v:fN(tS),d:dH(dTotal),c:'var(--red)'},
+    (hasViews&&tV)?{l:'Просм. 24ч',v:fN(tV),d:'',c:'#6366f1'}:null,
+    {l:'Ср. ER',v:avgER+'%',d:avgDE!==null?dH(parseFloat(avgDE),'%'):'',c:'var(--amber)'},
+    {l:'Растут ▲',v:withD.length?growing:'—',d:'',c:'var(--green)'},
+    {l:'Теряют ▼',v:withD.length?falling:'—',d:'',c:'var(--red)'},
+  ].filter(Boolean);
+
+  document.getElementById('statsBar').innerHTML=statsArr.map(function(s,i){
+    return '<div class="stat-card" style="--i:'+i+'">'
+      +'<div class="stat-accent" style="background:'+s.c+'"></div>'
+      +'<div class="stat-val" style="color:'+s.c+'">'+s.v+'</div>'
+      +'<div class="stat-lbl">'+s.l+'</div>'
+      +s.d
+      +'</div>';
+  }).join('');
+
+  _ch=channels;
+  var showV=hasViews;
+  document.getElementById('tblHead').innerHTML='<tr>'
+    +'<th onclick="sortBy(\'name\')">Канал <span class="thi" id="th-name">↕</span></th>'
+    +'<th onclick="sortBy(\'subs\')">Подписчики <span class="thi" id="th-subs">↕</span></th>'
+    +(showV?'<th onclick="sortBy(\'v24\')">Просм. 24ч <span class="thi" id="th-v24">↕</span></th>':'')
+    +'<th onclick="sortBy(\'er24\')">ER <span class="thi" id="th-er24">↕</span></th>'
+    +'<th onclick="sortBy(\'dSubs\')">Δ Подп. <span class="thi" id="th-dSubs">↕</span></th>'
+    +'<th onclick="sortBy(\'dEr\')">Δ ER <span class="thi" id="th-dEr">↕</span></th>'
+    +'</tr>';
+  renderMini();
+  fv();
+}
+
+// ── MINI CHARTS ───────────────────────────────────────────────────────────────
+function renderMini(){
+  if(!_ch.length)return;
+  var RED='#d9231b',GRN='#16a34a',AMB='#d97706';
+  function barColor(c,type){
+    if(type==='er')return c.er24>=50?AMB:c.er24>=30?GRN:RED;
+    if(type==='delta')return (c.dSubs||0)>=0?GRN:RED;
+    return RED;
+  }
+  function buildBars(el,rows,maxVal,type,labelFn){
+    if(!el)return;
+    var absMax=Math.max.apply(null,rows.map(function(c){return Math.abs(maxVal(c));}));
+    absMax=absMax||1;
+    el.innerHTML=rows.map(function(c,i){
+      var val=maxVal(c);
+      var h=Math.max(4,Math.round((Math.abs(val)/absMax)*48));
+      var col=barColor(c,type);
+      var lbl=labelFn(c,val);
+      var tipPos=i===0?'left:0;transform:none':i===rows.length-1?'right:0;left:auto;transform:none':'left:50%;transform:translateX(-50%)';
+      return '<div class="mc-bar" style="height:'+h+'px;background:'+col+';animation-delay:'+(i*0.03)+'s">'
+        +'<div class="mc-tip" style="'+tipPos+'"><strong>'+c.name+'</strong><span>'+lbl+'</span></div>'
+        +'</div>';
+    }).join('');
+  }
+  var erRows=[].concat(_ch).sort(function(a,b){return b.er24-a.er24;}).slice(0,12);
+  document.getElementById('mc1v').textContent=erRows[0]?erRows[0].er24+'%':'—';
+  buildBars(document.getElementById('mcER'),erRows,function(c){return c.er24;},'er',function(c){return 'ER: '+c.er24+'%';});
+  var subRows=[].concat(_ch).sort(function(a,b){return b.subs-a.subs;}).slice(0,12);
+  var mxS=subRows[0]?subRows[0].subs:1;
+  document.getElementById('mc2v').textContent=mxS>=1000?(mxS/1000).toFixed(0)+'K':''+mxS;
+  buildBars(document.getElementById('mcSubs'),subRows,function(c){return c.subs;},'subs',function(c){return (c.subs||0).toLocaleString('ru')+' подп.';});
+  var dRows=[].concat(_ch).filter(function(c){return c.dSubs!==null;}).sort(function(a,b){return b.dSubs-a.dSubs;}).slice(0,12);
+  document.getElementById('mc3v').textContent=dRows[0]?(dRows[0].dSubs>0?'+':'')+dRows[0].dSubs:'—';
+  if(dRows.length)buildBars(document.getElementById('mcDelta'),dRows,function(c){return c.dSubs;},'delta',function(c){return 'Δ: '+(c.dSubs>0?'+':'')+c.dSubs;});
+}
+
+// ── TABLE & CARDS ─────────────────────────────────────────────────────────────
+function sortBy(k){tSK===k?(tSD=tSD==='desc'?'asc':'desc'):(tSK=k,tSD='desc');fv();}
+function setView(v){
+  viewMode=v;
+  document.getElementById('vtL').classList.toggle('active',v==='list');
+  document.getElementById('vtC').classList.toggle('active',v==='cards');
+  document.getElementById('listView').style.display=v==='list'?'block':'none';
+  document.getElementById('cardsView').style.display=v==='cards'?'block':'none';
+  fv();
+}
+function fv(){
+  if(!_ch.length)return;
+  var q=(document.getElementById('searchQ').value||'').toLowerCase();
+  var f=document.getElementById('fselEl').value||'all';
+  var mxER=Math.max.apply(null,_ch.map(function(c){return c.er24;}));mxER=mxER||1;
+  var showV=_ch.some(function(c){return c.v24!==null&&c.v24>0;});
+  var rows=[].concat(_ch).filter(function(c){
+    if(q&&(c.name||'').toLowerCase().indexOf(q)<0)return false;
+    if(f==='up'&&!(c.dSubs!==null&&c.dSubs>0))return false;
+    if(f==='down'&&!(c.dSubs!==null&&c.dSubs<0))return false;
+    if(f==='er30'&&c.er24<30)return false;
+    if(f==='er50'&&c.er24<50)return false;
+    return true;
+  });
+  rows.sort(function(a,b){
+    var av=tSK==='name'?(a.name||''):(a[tSK]!=null?a[tSK]:-Infinity);
+    var bv=tSK==='name'?(b.name||''):(b[tSK]!=null?b[tSK]:-Infinity);
+    return tSK==='name'?(tSD==='desc'?bv.localeCompare(av,'ru'):av.localeCompare(bv,'ru')):(tSD==='desc'?bv-av:av-bv);
+  });
+  ['name','subs','v24','er24','dSubs','dEr'].forEach(function(k){
+    var el=document.getElementById('th-'+k);if(!el)return;
+    el.textContent=tSK===k?(tSD==='desc'?'↓':'↑'):'↕';
+    el.parentElement.classList.toggle('sorted',tSK===k);
+  });
+  document.getElementById('tcount').textContent=rows.length+' / '+_ch.length;
+  var RED='var(--red)',GRN='var(--green)',AMB='var(--amber)';
+  function erC(v){return v>=50?AMB:v>=30?GRN:RED;}
+  if(viewMode==='list'){
+    document.getElementById('tbody').innerHTML=rows.map(function(c,i){
+      var ec=erC(c.er24),erW=Math.round((c.er24/mxER)*38);
+      return '<tr onclick="openPanel(\''+encodeURIComponent(c.name||'')+'\')">'+
+        '<td class="tdn"><div class="cn">'+(c.name||'')+'</div>'+(c.url?'<div class="cl"><a href="'+c.url+'" target="_blank" onclick="event.stopPropagation()">@'+c.url.replace('https://t.me/','').replace('http://t.me/','')+'</a></div>':'')+'</td>'+
+        '<td><strong>'+(c.subs||0).toLocaleString('ru')+'</strong></td>'+
+        (showV?'<td>'+(c.v24||0).toLocaleString('ru')+'</td>':'')+
+        '<td><div class="erb"><div class="erbg"><div class="erf" style="width:'+erW+'px;background:'+ec+'"></div></div><span class="erv" style="color:'+ec+'">'+c.er24+'%</span></div></td>'+
+        '<td>'+dStr(c.dSubs)+'</td>'+
+        '<td>'+dStr(c.dEr,'%',1)+'</td>'+
+        '</tr>';
+    }).join('');
+  }else{
+    document.getElementById('cGrid').innerHTML=rows.map(function(c,i){
+      var ec=erC(c.er24),erW=Math.round((c.er24/mxER)*100);
+      return '<div class="chan-card" style="--i:'+i+'" onclick="openPanel(\''+encodeURIComponent(c.name||'')+'\')">'+
+        '<div class="card-top">'+
+          '<div><div class="card-name">'+(c.name||'')+'</div>'+(c.url?'<div class="card-link"><a href="'+c.url+'" target="_blank" onclick="event.stopPropagation()">@'+c.url.replace('https://t.me/','').replace('http://t.me/','')+'</a></div>':'')+'</div>'+
+          '<div class="card-er" style="color:'+ec+'">'+c.er24+'%</div>'+
+        '</div>'+
+        '<div class="card-row"><span class="crl">Подписчики</span><span class="crv">'+(c.subs||0).toLocaleString('ru')+'</span></div>'+
+        (c.v24?'<div class="card-row"><span class="crl">Просм. 24ч</span><span class="crv">'+fN(c.v24)+'</span></div>':'')+
+        '<div class="card-progress"><div class="card-progress-fill" style="width:'+erW+'%;background:'+ec+'"></div></div>'+
+        '<div class="card-deltas">'+
+          (c.dSubs!==null?dStr(c.dSubs):'')+
+          (c.dEr!==null?dStr(c.dEr,'%',1):'')+
+        '</div>'+
+        ((c.v24||c.v48||c.v72)?'<div class="card-tip">👁 24ч: '+(c.v24||0).toLocaleString('ru')+' · 48ч: '+(c.v48||0).toLocaleString('ru')+' · 72ч: '+(c.v72||0).toLocaleString('ru')+'</div>':'')+
+        '</div>';
+    }).join('');
+  }
+}
+
+// ── DETAIL PANEL ─────────────────────────────────────────────────────────────
+function openPanel(nameEnc){
+  var name=decodeURIComponent(nameEnc);
+  var c=_ch.find(function(x){return x.name===name;});if(!c)return;
+  document.getElementById('dpN').textContent=c.name;
+  document.getElementById('dpL').innerHTML=c.url?'<a href="'+c.url+'" target="_blank">@'+c.url.replace('https://t.me/','').replace('http://t.me/','')+'</a>':'';
+  var ec=c.er24>=50?'var(--amber)':c.er24>=30?'var(--green)':'var(--red)';
+  var html='<div><p class="dp-sl">Показатели</p><div class="dp-ms">'
+    +'<div class="dp-m"><div class="dp-mv" style="color:'+ec+'">'+c.er24+'%</div><div class="dp-ml">ER</div></div>'
+    +'<div class="dp-m"><div class="dp-mv">'+(c.subs||0).toLocaleString('ru')+'</div><div class="dp-ml">Подписчики</div></div>'
+    +(c.v24?'<div class="dp-m"><div class="dp-mv">'+fN(c.v24)+'</div><div class="dp-ml">Просм. 24ч</div></div>':'')
+    +(c.dSubs!==null?'<div class="dp-m"><div class="dp-mv" style="color:'+(c.dSubs>=0?'var(--green)':'var(--red)')+'">'+(c.dSubs>=0?'+':'')+c.dSubs+'</div><div class="dp-ml">Δ Подп.</div></div>':'')
+    +(c.dEr!==null?'<div class="dp-m"><div class="dp-mv" style="color:'+(c.dEr>=0?'var(--green)':'var(--red)')+'">'+(c.dEr>=0?'+':'')+c.dEr.toFixed(1)+'%</div><div class="dp-ml">Δ ER</div></div>':'')
+    +'</div></div>';
+  var source=mode==='daily'?snaps:allMonths;
+  var history=[];
+  for(var i=0;i<source.length;i++){
+    var s=source[i];
+    var ch=s.channels&&s.channels.find(function(x){return (x.name||x.n)===c.name;});
+    if(!ch)continue;
+    var pp=i>0&&source[i-1].channels?source[i-1].channels.find(function(x){return (x.name||x.n)===c.name;}):null;
+    history.push({label:s.date||s.label,subs:ch.subs||0,er24:ch.er24||0,ds:pp?ch.subs-(pp.subs||0):null,de:pp?parseFloat(((ch.er24||0)-(pp.er24||0)).toFixed(1)):null});
+  }
+  history.reverse();
+  if(history.length>1){
+    html+='<div><p class="dp-sl">История</p>'+history.map(function(h){
+      return '<div class="hist-item"><div class="hist-date">'+h.label+'</div><div class="hist-vs">'
+        +'<div class="hist-v"><div class="hist-vv">'+h.er24+'%</div><div class="hist-vl">ER</div></div>'
+        +'<div class="hist-v"><div class="hist-vv">'+h.subs.toLocaleString('ru')+'</div><div class="hist-vl">Подп.</div></div>'
+        +(h.ds!==null?'<div class="hist-v"><div class="hdelta '+(h.ds>0?'pos':h.ds<0?'neg':'neu')+'">'+(h.ds>0?'+':'')+h.ds+'</div></div>':'')
+        +'</div></div>';
+    }).join('')+'</div>';
+  }
+  document.getElementById('dpB').innerHTML=html;
+  document.getElementById('pOv').classList.add('open');
+  document.getElementById('dp').classList.add('open');
+}
+function closePanel(){document.getElementById('pOv').classList.remove('open');document.getElementById('dp').classList.remove('open');}
+
+// ── LOADER ────────────────────────────────────────────────────────────────────
+setTimeout(function(){
+  document.getElementById('loader').classList.add('out');
+  setTimeout(function(){document.getElementById('loader').style.display='none';},650);
+},1800);
+
+
+// ── THEME ─────────────────────────────────────────────────────────────────────
+var KT='gm_theme';
+var _theme=localStorage.getItem(KT)||'light';
+function applyTheme(t){
+  _theme=t;
+  document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'');
+  var btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=t==='dark'?'☀️':'🌙';
+  localStorage.setItem(KT,t);
+}
+function toggleTheme(){applyTheme(_theme==='dark'?'light':'dark');}
+applyTheme(_theme);
+
+// ── AVATARS ───────────────────────────────────────────────────────────────────
+var _avatarCache={};
+function getAvatar(url,cb){
+  if(!url)return cb(null);
+  var username=url.replace(/https?:\/\/t\.me\//,'').replace(/http?:\/\/t\.me\//,'').replace(/\//,'');
+  if(!username)return cb(null);
+  if(_avatarCache[username]!==undefined)return cb(_avatarCache[username]);
+  // Use unavatar service - fetches Telegram avatar by username
+  var src='https://unavatar.io/telegram/'+username+'?fallback=false';
+  var img=new Image();
+  img.onload=function(){_avatarCache[username]=src;cb(src);};
+  img.onerror=function(){_avatarCache[username]=null;cb(null);};
+  img.src=src;
+}
+
+// ── BADGES ────────────────────────────────────────────────────────────────────
+function getBadges(c){
+  var badges=[];
+  if(c.er24>=50) badges.push({cls:'badge-er',label:'🔥 Высокий ER'});
+  else if(c.er24>=30) badges.push({cls:'badge-er',label:'⚡ Хороший ER'});
+  if(c.dSubs!==null&&c.subs>0){
+    var pct=(c.dSubs/c.subs)*100;
+    if(pct>=5) badges.push({cls:'badge-growth',label:'📈 Быстрый рост'});
+    else if(pct>0) badges.push({cls:'badge-growth',label:'↑ Растёт'});
+    else if(pct<-3) badges.push({cls:'badge-alert',label:'⚠ Падение'});
+  }
+  if(c.dEr!==null){
+    if(c.dEr>=5) badges.push({cls:'badge-growth',label:'↑ ER растёт'});
+    else if(c.dEr<=-5) badges.push({cls:'badge-drop',label:'↓ ER упал'});
+  }
+  return badges;
+}
+
+// ── SPARKLINE ─────────────────────────────────────────────────────────────────
+function getSparkData(name){
+  var source=mode==='daily'?snaps:allMonths;
+  return source.map(function(s){
+    var ch=s.channels&&s.channels.find(function(x){return (x.name||x.n)===name;});
+    return ch?ch.subs:null;
+  }).filter(function(v){return v!==null;});
+}
+function renderSparkline(vals,color){
+  if(!vals||vals.length<2)return '';
+  var max=Math.max.apply(null,vals),min=Math.min.apply(null,vals);
+  var range=max-min||1;
+  return '<span class="sparkline">'+vals.map(function(v){
+    var h=Math.max(2,Math.round(((v-min)/range)*18));
+    return '<span class="spark-bar" style="height:'+h+'px;background:'+color+'"></span>';
+  }).join('')+'</span>';
+}
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  if(!_ch.length)return;
+  var q=(document.getElementById('searchQ').value||'').toLowerCase();
+  var f=document.getElementById('fselEl').value||'all';
+  var rows=_ch.filter(function(c){
+    if(q&&(c.name||'').toLowerCase().indexOf(q)<0)return false;
+    if(f==='up'&&!(c.dSubs>0))return false;
+    if(f==='down'&&!(c.dSubs<0))return false;
+    if(f==='er30'&&c.er24<30)return false;
+    if(f==='er50'&&c.er24<50)return false;
+    return true;
+  });
+  var lines=['Канал,Ссылка,Подписчики,ER24,%,Просм.24ч,Δ Подп.,Δ ER'];
+  rows.forEach(function(c){
+    lines.push([
+      '"'+(c.name||'')+'"',
+      c.url||'',
+      c.subs||0,
+      c.er24||0,
+      c.v24||0,
+      c.dSubs!==null?c.dSubs:'',
+      c.dEr!==null?c.dEr:''
+    ].join(','));
+  });
+  var blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='gismedia_'+new Date().toLocaleDateString('ru').replace(/\./g,'-')+'.csv';
+  a.click();
+}
+
+// ── ENHANCED OPEN PANEL ───────────────────────────────────────────────────────
+var _origOpenPanel=openPanel;
+openPanel=function(nameEnc){
+  var name=decodeURIComponent(nameEnc);
+  var c=_ch.find(function(x){return x.name===name;});if(!c)return;
+  document.getElementById('dpN').textContent=c.name;
+  document.getElementById('dpL').innerHTML=c.url?'<a href="'+c.url+'" target="_blank">@'+c.url.replace('https://t.me/','').replace('http://t.me/','')+'</a>':'';
+
+  var ec=c.er24>=50?'var(--amber)':c.er24>=30?'var(--green)':'var(--red)';
+  var badges=getBadges(c);
+  var badgesHtml=badges.length?'<div class="chan-badges">'+badges.map(function(b){return '<span class="badge '+b.cls+'">'+b.label+'</span>';}).join('')+'</div>':'';
+
+  // Sparkline history
+  var sparkVals=getSparkData(name);
+  var sparkHtml=sparkVals.length>1?renderSparkline(sparkVals,'var(--green)'):'';
+
+  var html='<div>'+badgesHtml+'</div>'
+    +'<div><p class="dp-sl">Показатели</p><div class="dp-ms">'
+    +'<div class="dp-m"><div class="dp-mv" style="color:'+ec+'">'+c.er24+'%</div><div class="dp-ml">ER</div></div>'
+    +'<div class="dp-m"><div class="dp-mv">'+(c.subs||0).toLocaleString('ru')+sparkHtml+'</div><div class="dp-ml">Подписчики</div></div>'
+    +(c.v24?'<div class="dp-m"><div class="dp-mv">'+fN(c.v24)+'</div><div class="dp-ml">Просм. 24ч</div></div>':'')
+    +(c.v48?'<div class="dp-m"><div class="dp-mv">'+fN(c.v48)+'</div><div class="dp-ml">Просм. 48ч</div></div>':'')
+    +(c.dSubs!==null?'<div class="dp-m"><div class="dp-mv" style="color:'+(c.dSubs>=0?'var(--green)':'var(--red)')+'">'+(c.dSubs>=0?'+':'')+c.dSubs+'</div><div class="dp-ml">Δ Подп.</div></div>':'')
+    +(c.dEr!==null?'<div class="dp-m"><div class="dp-mv" style="color:'+(c.dEr>=0?'var(--green)':'var(--red)')+'">'+(c.dEr>=0?'+':'')+c.dEr.toFixed(1)+'%</div><div class="dp-ml">Δ ER</div></div>':'')
+    +'</div></div>';
+
+  // Growth chart across snapshots
+  var source=mode==='daily'?snaps:allMonths;
+  var history=[];
+  for(var i=0;i<source.length;i++){
+    var s=source[i];
+    var ch=s.channels&&s.channels.find(function(x){return (x.name||x.n)===c.name;});
+    if(!ch)continue;
+    var pp=i>0&&source[i-1].channels?source[i-1].channels.find(function(x){return (x.name||x.n)===c.name;}):null;
+    history.push({label:s.date||s.label,subs:ch.subs||0,er24:ch.er24||0,ds:pp?ch.subs-(pp.subs||0):null,de:pp?parseFloat(((ch.er24||0)-(pp.er24||0)).toFixed(1)):null});
+  }
+  history.reverse();
+
+  if(history.length>=2){
+    html+='<div><p class="dp-sl">График роста</p><canvas id="dpChart" class="dp-chart"></canvas></div>';
+  }
+  if(history.length>1){
+    html+='<div><p class="dp-sl">История</p>'+history.map(function(h){
+      return '<div class="hist-item"><div class="hist-date">'+h.label+'</div><div class="hist-vs">'
+        +'<div class="hist-v"><div class="hist-vv">'+h.er24+'%</div><div class="hist-vl">ER</div></div>'
+        +'<div class="hist-v"><div class="hist-vv">'+h.subs.toLocaleString('ru')+'</div><div class="hist-vl">Подп.</div></div>'
+        +(h.ds!==null?'<div class="hist-v"><div class="hdelta '+(h.ds>0?'pos':h.ds<0?'neg':'neu')+'">'+(h.ds>0?'+':'')+h.ds+'</div></div>':'')
+        +'</div></div>';
+    }).join('')+'</div>';
+  }
+
+  // Post feed
+  if(c.url){
+    var username=c.url.replace(/https?:\/\/t\.me\//,'').replace(/\//,'');
+    html+='<div><p class="dp-sl">Лента постов</p>'
+      +'<div class="feed-loading" id="feedLoading">Загрузка…</div>'
+      +'<iframe class="feed-frame" id="feedFrame" style="display:none" src="https://t.me/s/'+username+'" onload="document.getElementById(\'feedLoading\').style.display=\'none\';this.style.display=\'block\'"></iframe>'
+      +'</div>';
+  }
+
+  document.getElementById('dpB').innerHTML=html;
+  document.getElementById('pOv').classList.add('open');
+  document.getElementById('dp').classList.add('open');
+
+  // Render growth chart
+  if(history.length>=2){
+    setTimeout(function(){
+      var canvas=document.getElementById('dpChart');if(!canvas)return;
+      if(window._dpChart){try{window._dpChart.destroy();}catch(e){}}
+      window._dpChart=new Chart(canvas,{
+        type:'line',
+        data:{
+          labels:history.map(function(h){return h.label;}),
+          datasets:[{
+            data:history.map(function(h){return h.subs;}),
+            borderColor:'var(--red)',borderWidth:2,
+            pointRadius:3,pointBackgroundColor:'var(--red)',
+            fill:true,
+            backgroundColor:function(ctx){
+              var g=ctx.chart.ctx.createLinearGradient(0,0,0,100);
+              g.addColorStop(0,'rgba(220,38,38,.15)');
+              g.addColorStop(1,'rgba(220,38,38,0)');
+              return g;
+            },
+            tension:.4
+          }]
+        },
+        options:{
+          responsive:false,maintainAspectRatio:false,animation:false,
+          plugins:{legend:{display:false},tooltip:{
+            backgroundColor:'#0a0a0a',titleColor:'#fff',bodyColor:'rgba(255,255,255,.7)',
+            borderColor:'rgba(255,255,255,.08)',borderWidth:1,padding:8,
+            displayColors:false,
+            callbacks:{label:function(i){return i.raw.toLocaleString('ru')+' подп.';}}
+          }},
+          scales:{
+            x:{ticks:{color:'var(--muted)',font:{size:9}},grid:{color:'var(--border)'}},
+            y:{ticks:{color:'var(--muted)',font:{size:9},callback:function(v){return v>=1000?(v/1000).toFixed(0)+'K':v;}},grid:{color:'var(--border)'}}
+          }
+        }
+      });
+    },50);
+  }
+
+  // Load avatar
+  getAvatar(c.url,function(src){
+    var nameEl=document.getElementById('dpN');if(!nameEl)return;
+    if(src){
+      var wrap=nameEl.parentElement;
+      if(!wrap.querySelector('.chan-avatar')){
+        var img=document.createElement('img');
+        img.className='chan-avatar';img.src=src;img.alt='';
+        wrap.insertBefore(img,wrap.firstChild);
+        wrap.style.display='flex';wrap.style.alignItems='center';wrap.style.gap='10px';
+      }
+    }
+  });
+};
+
+// ── ENHANCED TABLE ROWS (add sparklines + alert highlight) ───────────────────
+var _origFv=fv;
+fv=function(){
+  _origFv();
+  // Add sparklines to table rows
+  var rows=document.querySelectorAll('#tbody tr');
+  rows.forEach(function(tr){
+    var nameEl=tr.querySelector('.cn');if(!nameEl)return;
+    var name=nameEl.textContent;
+    var c=_ch.find(function(x){return x.name===name;});if(!c)return;
+    // Alert row
+    if(c.dSubs!==null&&c.subs>0&&(c.dSubs/c.subs)*100<-3) tr.classList.add('alert-row');
+    if(c.dEr!==null&&c.dEr<=-8) tr.classList.add('alert-row');
+    // Avatar
+    (function(row,chan){
+      getAvatar(chan.url,function(src){
+        var nd=row.querySelector('.tdn');if(!nd)return;
+        var wrap=nd.querySelector('.chan-avatar-wrap');
+        if(!wrap){
+          wrap=document.createElement('div');wrap.className='chan-avatar-wrap';
+          var cn=nd.querySelector('.cn'),cl=nd.querySelector('.cl');
+          var info=document.createElement('div');
+          if(cn)info.appendChild(cn.cloneNode(true));
+          if(cl)info.appendChild(cl.cloneNode(true));
+          nd.innerHTML='';
+          if(src){var img=document.createElement('img');img.className='chan-avatar';img.src=src;img.alt='';wrap.appendChild(img);}
+          wrap.appendChild(info);
+          nd.appendChild(wrap);
+        }
+      });
+    })(tr,c);
+  });
+};
+
+function loadCJS(cb){
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+  s.onerror=function(){var s2=document.createElement('script');s2.src='https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js';s2.onload=cb;document.head.appendChild(s2);};
+  s.onload=cb;document.head.appendChild(s);
+}
+loadCJS(function(){initAuth();});
+
+</script>
+</body>
+</html>
