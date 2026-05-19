@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>GISMEDIA · Аналитика</title>
 <link rel="icon" href="favicon.ico"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -502,6 +502,53 @@ tr.alert-row:hover{background:rgba(239,68,68,.07)!important}
 .feed-link-name{font-weight:600;font-size:13px}
 .feed-link-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .feed-link-arrow{color:var(--muted);font-size:14px;font-weight:600}
+
+/* ── MOBILE ── */
+.card-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
+.chan-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
+.chan-avatar-wrap{display:flex;align-items:center;gap:10px}
+
+@media(max-width:768px){
+  .topnav{padding:0 12px;gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .topnav::-webkit-scrollbar{display:none}
+  .nav-logo img{height:22px}
+  .mode-sw .msb{padding:4px 8px;font-size:11px}
+  .snap-sel-btn{max-width:130px;font-size:11px;padding:4px 8px}
+  .sync-pill{display:none}
+  .vs-pill{display:none!important}
+  #themeBtn{padding:4px 7px;font-size:13px}
+  #noteBtn{display:none!important}
+  .nav-btn.primary{padding:5px 10px;font-size:12px}
+  .content{padding:12px 12px 60px}
+  .stats-bar{gap:6px}
+  .stat-card{min-width:calc(50% - 3px);padding:10px 12px}
+  .stat-val{font-size:18px}
+  .mini-charts{grid-template-columns:1fr}
+  .mc{padding:10px 12px}
+  .toolbar{gap:6px}
+  .search{width:100%;flex:1}
+  .fsel{font-size:11px;padding:7px 8px}
+  .tbl-wrap{border-radius:8px}
+  thead th{padding:8px 10px;font-size:9px}
+  td{padding:8px 10px;font-size:12px}
+  .tdn{max-width:140px}
+  .cn{font-size:12px}
+  .cards-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .chan-card{padding:10px}
+  .card-name{font-size:12px}
+  .card-er{font-size:16px}
+  .dp{width:100%;border-radius:16px 16px 0 0;top:auto;height:90vh}
+  .dp-head{padding:12px 14px 10px}
+  .dp-body{padding:12px 14px}
+  .modal{border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:90vh;width:100%;max-width:100%}
+  .overlay{align-items:flex-end}
+  .toolbar{flex-wrap:nowrap}
+  .tb-right{flex-shrink:0}
+}
+@media(max-width:400px){
+  .cards-grid{grid-template-columns:1fr}
+  .stat-card{min-width:calc(50% - 3px)}
+}
 </style>
 </head>
 <body>
@@ -1099,10 +1146,11 @@ function fv(){
         '</tr>';
     }).join('');
   }else{
-    document.getElementById('cGrid').innerHTML=rows.map(function(c,i){
+    // Render cards then load avatars
+  document.getElementById('cGrid').innerHTML=rows.map(function(c,i){
       var ec=erC(c.er24),erW=Math.round((c.er24/mxER)*100);
       return '<div class="chan-card" style="--i:'+i+'" onclick="openPanel(\''+encodeURIComponent(c.name||'')+'\')">'+
-        '<div class="card-top">'+
+        '<div class="card-top">' + '<img class="card-avatar card-av-'+encodeURIComponent(c.name||'').replace(/%/g,'_')+'" src="'+makeInitialSrc(c.name||'')+'"/>'+
           '<div><div class="card-name">'+(c.name||'')+'</div>'+(c.url?'<div class="card-link"><a href="'+c.url+'" target="_blank" onclick="event.stopPropagation()">@'+c.url.replace('https://t.me/','').replace('http://t.me/','')+'</a></div>':'')+'</div>'+
           '<div class="card-er" style="color:'+ec+'">'+c.er24+'%</div>'+
         '</div>'+
@@ -1178,13 +1226,37 @@ function applyTheme(t){
 function toggleTheme(){applyTheme(_theme==='dark'?'light':'dark');}
 applyTheme(_theme);
 
-// ── AVATARS ───────────────────────────────────────────────────────────────────
+// ── AVATARS ──────────────────────────────────────────────────────────────────
 var _avatarCache={};
 var _avatarColors=['#dc2626','#d97706','#16a34a','#2563eb','#7c3aed','#db2777','#0891b2','#059669'];
 function nameToColor(name){
-  var hash=0;for(var i=0;i<name.length;i++)hash=name.charCodeAt(i)+((hash<<5)-hash);
-  return _avatarColors[Math.abs(hash)%_avatarColors.length];
+  var h=0;for(var i=0;i<(name||'').length;i++)h=(name||'').charCodeAt(i)+((h<<5)-h);
+  return _avatarColors[Math.abs(h)%_avatarColors.length];
 }
+function makeInitialSrc(name){
+  var ini=(name||'?')[0].toUpperCase();
+  var col=nameToColor(name||'');
+  var c=document.createElement('canvas');c.width=56;c.height=56;
+  var ctx=c.getContext('2d');
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(28,28,28,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 20px Inter,system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ini,28,29);
+  return c.toDataURL();
+}
+function getAvatar(name,url,cb){
+  var key=(url||name||'_');
+  if(_avatarCache[key]!==undefined){cb(_avatarCache[key]);return;}
+  var fallback=makeInitialSrc(name);
+  if(!url){_avatarCache[key]=fallback;cb(fallback);return;}
+  var username=url.replace(/https?:\/\/t\.me\//,'').replace(/http:\/\/t\.me\//,'').replace(/^\//,'').split('/')[0];
+  if(!username){_avatarCache[key]=fallback;cb(fallback);return;}
+  var img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=function(){_avatarCache[key]=img.src;cb(img.src);};
+  img.onerror=function(){_avatarCache[key]=fallback;cb(fallback);};
+  img.src='https://unavatar.io/telegram/'+username;
+}
+
 function makeInitialAvatar(name){
   var initial=(name||'?')[0].toUpperCase();
   var color=nameToColor(name||'');
@@ -1381,7 +1453,7 @@ openPanel=function(nameEnc){
   }
 
   // Load avatar
-  getAvatar(c.name||c.n||"",c.url,function(src){
+  getAvatar((c.name||c.n||""),c.url,function(src){
     var nameEl=document.getElementById('dpN');if(!nameEl)return;
     if(src){
       var wrap=nameEl.parentElement;
